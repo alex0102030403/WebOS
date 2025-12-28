@@ -1,7 +1,9 @@
 import type { FileNode, BootConfig, CommandResult } from '../types'
 
-// Use relative URL - works with Render's rewrite rules
-const API_BASE = '/api'
+// In production, use the full backend URL; in dev, use relative path
+const API_BASE = import.meta.env.PROD 
+  ? 'https://webos-api.onrender.com' 
+  : '/api'
 
 export async function fetchBootConfig(): Promise<BootConfig> {
   const response = await fetch(`${API_BASE}/system/boot`)
