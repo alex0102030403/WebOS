@@ -92,7 +92,10 @@ export function Terminal({ onClose }: TerminalProps) {
       className="flex flex-col h-full bg-black text-green-400 font-mono text-sm rounded-lg overflow-hidden"
       onClick={handleTerminalClick}
     >
-      <div className="flex items-center justify-between px-4 py-2 bg-gray-800 border-b border-gray-700">
+      <div 
+        data-window-header
+        className="flex items-center justify-between px-4 py-2 bg-gray-800 border-b border-gray-700 cursor-grab active:cursor-grabbing"
+      >
         <span className="text-white text-sm font-medium">Terminal</span>
         <button
           onClick={onClose}

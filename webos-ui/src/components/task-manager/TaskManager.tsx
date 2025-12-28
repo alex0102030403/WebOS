@@ -59,7 +59,10 @@ export function TaskManager({ onClose }: TaskManagerProps) {
 
   return (
     <div className="flex flex-col h-full bg-gray-900 text-white rounded-lg overflow-hidden">
-      <div className="flex items-center justify-between px-4 py-2 bg-gray-800 border-b border-gray-700">
+      <div 
+        data-window-header
+        className="flex items-center justify-between px-4 py-2 bg-gray-800 border-b border-gray-700 cursor-grab active:cursor-grabbing"
+      >
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium">Task Manager</span>
           <span className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`} />

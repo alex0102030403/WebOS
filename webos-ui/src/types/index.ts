@@ -25,3 +25,9 @@ export interface CommandResult {
   output: string | null
   error: string | null
 }
+
+export interface OpenApp {
+  id: string
+  name: string
+  icon: string
+}

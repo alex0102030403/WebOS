@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { BiosSequence } from './components/bios/BiosSequence'
-import { ResponsiveDesktop } from './components/scene'
+import { Desktop } from './components/desktop/Desktop'
 
 function App() {
   const [isBooted, setIsBooted] = useState(false)
@@ -9,7 +9,11 @@ function App() {
     return <BiosSequence onComplete={() => setIsBooted(true)} />
   }
 
-  return <ResponsiveDesktop />
+  return (
+    <div className="w-screen h-screen">
+      <Desktop />
+    </div>
+  )
 }
 
 export default App

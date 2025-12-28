@@ -2,12 +2,18 @@ import { useState, useEffect } from 'react'
 import { DesktopIcon } from './DesktopIcon'
 import { Taskbar } from './Taskbar'
 import { StartMenu } from './StartMenu'
+import { DraggableWindow } from './DraggableWindow'
 import { TaskManager } from '../task-manager/TaskManager'
 import { Terminal } from '../terminal/Terminal'
 import { fetchFileNodes, fetchBootConfig } from '../../api'
-import type { FileNode, BootConfig } from '../../types'
+import type { FileNode, BootConfig, OpenApp } from '../../types'
 
 const DEFAULT_WALLPAPER = 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=1920&q=80'
+
+const APP_CONFIG: Record<string, { name: string; icon: string; width: number; height: number }> = {
+  terminal: { name: 'Terminal', icon: '💻', width: 700, height: 450 },
+  taskmanager: { name: 'Task Manager', icon: '📊', width: 600, height: 400 },
+}
 
 export function Desktop() {
   const [icons, setIcons] = useState<FileNode[]>([])
@@ -16,7 +22,8 @@ export function Desktop() {
   const [isStartMenuOpen, setIsStartMenuOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [openApps, setOpenApps] = useState<Set<string>>(new Set())
+  const [openApps, setOpenApps] = useState<OpenApp[]>([])
+  const [focusedApp, setFocusedApp] = useState<string | null>(null)
 
   useEffect(() => {
     async function loadDesktop() {
@@ -40,12 +47,19 @@ export function Desktop() {
     loadDesktop()
   }, [])
 
+  function openApp(appId: string) {
+    if (openApps.some(app => app.id === appId)) return
+    const config = APP_CONFIG[appId]
+    if (!config) return
+    setOpenApps(prev => [...prev, { id: appId, ...config }])
+  }
+
   function handleIconClick(node: FileNode) {
     if (node.type === 'SHORTCUT' && node.content?.startsWith('http')) {
       window.open(node.content, '_blank')
     } else if (node.type === 'SHORTCUT' && node.content?.startsWith('app:')) {
       const appName = node.content.replace('app:', '')
-      setOpenApps(prev => new Set(prev).add(appName))
+      openApp(appName)
     } else if (node.type === 'DIRECTORY') {
       console.log('Open directory:', node.id)
     } else {
@@ -53,12 +67,16 @@ export function Desktop() {
     }
   }
 
-  function closeApp(appName: string) {
-    setOpenApps(prev => {
-      const next = new Set(prev)
-      next.delete(appName)
-      return next
-    })
+  function closeApp(appId: string) {
+    setOpenApps(prev => prev.filter(app => app.id !== appId))
+  }
+
+  function handleAppClick(appId: string) {
+    setFocusedApp(appId)
+  }
+
+  function getZIndex(appId: string): number {
+    return focusedApp === appId ? 20 : 10
   }
 
   function handleDesktopClick() {
@@ -68,6 +86,7 @@ export function Desktop() {
 
   const wallpaperUrl = bootConfig?.wallpaperUrl || DEFAULT_WALLPAPER
   const username = bootConfig?.username || 'Visitor'
+  const isAppOpen = (appId: string) => openApps.some(app => app.id === appId)
 
   return (
     <div 
@@ -113,27 +132,38 @@ export function Desktop() {
         username={username}
       />
 
-      {openApps.has('taskmanager') && (
-        <div 
-          className="absolute top-8 left-1/2 -translate-x-1/2 w-[600px] h-[400px] shadow-2xl"
-          onClick={(e) => e.stopPropagation()}
+      {isAppOpen('taskmanager') && (
+        <DraggableWindow
+          initialX={50}
+          initialY={30}
+          width={APP_CONFIG.taskmanager.width}
+          height={APP_CONFIG.taskmanager.height}
+          zIndex={getZIndex('taskmanager')}
+          onFocus={() => setFocusedApp('taskmanager')}
         >
           <TaskManager onClose={() => closeApp('taskmanager')} />
-        </div>
+        </DraggableWindow>
       )}
 
-      {openApps.has('terminal') && (
-        <div 
-          className="absolute top-16 left-1/2 -translate-x-1/2 w-[700px] h-[450px] shadow-2xl"
-          onClick={(e) => e.stopPropagation()}
+      {isAppOpen('terminal') && (
+        <DraggableWindow
+          initialX={100}
+          initialY={60}
+          width={APP_CONFIG.terminal.width}
+          height={APP_CONFIG.terminal.height}
+          zIndex={getZIndex('terminal')}
+          onFocus={() => setFocusedApp('terminal')}
         >
           <Terminal onClose={() => closeApp('terminal')} />
-        </div>
+        </DraggableWindow>
       )}
 
       <Taskbar 
         onStartClick={() => setIsStartMenuOpen(!isStartMenuOpen)}
         isStartMenuOpen={isStartMenuOpen}
+        openApps={openApps}
+        onReorderApps={setOpenApps}
+        onAppClick={handleAppClick}
       />
     </div>
   )
