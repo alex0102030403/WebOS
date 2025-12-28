@@ -10,12 +10,12 @@ interface SearchPanelProps {
 }
 
 const TOP_APPS = [
-  { id: 'game-bar', name: 'Game Bar', icon: '🎮' },
-  { id: 'league', name: 'League of Legends', icon: '🎯' },
-  { id: 'snipping-tool', name: 'Snipping Tool', icon: '✂️' },
+  { id: 'terminal', name: 'Terminal', icon: '💻' },
+  { id: 'taskmanager', name: 'Task Manager', icon: '📊' },
+  { id: 'settings', name: 'Settings', icon: '⚙️' },
   { id: 'file-explorer', name: 'File Explorer', icon: '📁' },
   { id: 'chrome', name: 'Google Chrome', icon: '🌐' },
-  { id: 'terminal', name: 'Terminal', icon: '💻' },
+  { id: 'game-bar', name: 'Game Bar', icon: '🎮' },
 ]
 
 const QUICK_SEARCHES = [

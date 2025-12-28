@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { BiosSequence } from './components/bios/BiosSequence'
 import { Desktop } from './components/desktop/Desktop'
+import { SettingsProvider } from './context/SettingsContext'
 import type { RecentApp } from './types'
 
 function App() {
@@ -30,14 +31,16 @@ function App() {
   }
 
   return (
-    <div className="w-screen h-screen">
-      <Desktop 
-        onRestart={handleRestart}
-        onShutdown={handleShutdown}
-        recentApps={recentApps}
-        onAddRecentApp={addRecentApp}
-      />
-    </div>
+    <SettingsProvider>
+      <div className="w-screen h-screen">
+        <Desktop 
+          onRestart={handleRestart}
+          onShutdown={handleShutdown}
+          recentApps={recentApps}
+          onAddRecentApp={addRecentApp}
+        />
+      </div>
+    </SettingsProvider>
   )
 }
 

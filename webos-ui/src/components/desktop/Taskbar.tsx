@@ -9,13 +9,14 @@ interface TaskbarProps {
   openApps: OpenApp[]
   onReorderApps: (apps: OpenApp[]) => void
   onAppClick: (appId: string) => void
+  onOpenApp: (appId: string) => void
   onRestart: () => void
   onShutdown: () => void
   recentApps: RecentApp[]
   onAddRecentApp: (app: Omit<RecentApp, 'timestamp'>) => void
 }
 
-export function Taskbar({ openApps, onReorderApps, onAppClick, onRestart, onShutdown, recentApps, onAddRecentApp }: TaskbarProps) {
+export function Taskbar({ openApps, onReorderApps, onAppClick, onOpenApp, onRestart, onShutdown, recentApps, onAddRecentApp }: TaskbarProps) {
   const [currentTime, setCurrentTime] = useState(new Date())
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null)
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null)
@@ -79,7 +80,7 @@ export function Taskbar({ openApps, onReorderApps, onAppClick, onRestart, onShut
   }
 
   function handleSearchAppClick(appId: string) {
-    onAppClick(appId)
+    onOpenApp(appId)
     setIsSearchPanelOpen(false)
   }
 

@@ -5,6 +5,9 @@ import { StartMenu } from './StartMenu'
 import { DraggableWindow } from './DraggableWindow'
 import { TaskManager } from '../task-manager/TaskManager'
 import { Terminal } from '../terminal/Terminal'
+import { Settings } from '../settings/Settings'
+import { FileExplorer } from '../file-explorer/FileExplorer'
+import { useSettings } from '../../context/SettingsContext'
 import { fetchFileNodes, fetchBootConfig } from '../../api'
 import type { FileNode, BootConfig, OpenApp, RecentApp } from '../../types'
 
@@ -13,6 +16,8 @@ const DEFAULT_WALLPAPER = 'https://images.unsplash.com/photo-1579546929518-9e396
 const APP_CONFIG: Record<string, { name: string; icon: string; width: number; height: number }> = {
   terminal: { name: 'Terminal', icon: '💻', width: 700, height: 450 },
   taskmanager: { name: 'Task Manager', icon: '📊', width: 600, height: 400 },
+  settings: { name: 'Settings', icon: '⚙️', width: 500, height: 550 },
+  fileexplorer: { name: 'File Explorer', icon: '📂', width: 700, height: 500 },
 }
 
 interface DesktopProps {
@@ -23,6 +28,7 @@ interface DesktopProps {
 }
 
 export function Desktop({ onRestart, onShutdown, recentApps, onAddRecentApp }: DesktopProps) {
+  const { settings } = useSettings()
   const [icons, setIcons] = useState<FileNode[]>([])
   const [bootConfig, setBootConfig] = useState<BootConfig | null>(null)
   const [selectedIcon, setSelectedIcon] = useState<FileNode | null>(null)
@@ -31,6 +37,11 @@ export function Desktop({ onRestart, onShutdown, recentApps, onAddRecentApp }: D
   const [error, setError] = useState<string | null>(null)
   const [openApps, setOpenApps] = useState<OpenApp[]>([])
   const [focusedApp, setFocusedApp] = useState<string | null>(null)
+
+  // Apply font size to root element when settings change
+  useEffect(() => {
+    document.documentElement.style.setProperty('--webos-font-size', `${settings.fontSize}px`)
+  }, [settings.fontSize])
 
   useEffect(() => {
     async function loadDesktop() {
@@ -94,7 +105,8 @@ export function Desktop({ onRestart, onShutdown, recentApps, onAddRecentApp }: D
     setIsStartMenuOpen(false)
   }
 
-  const wallpaperUrl = bootConfig?.wallpaperUrl || DEFAULT_WALLPAPER
+  // Use settings wallpaper, fallback to bootConfig, then default
+  const wallpaperUrl = settings.wallpaperUrl || bootConfig?.wallpaperUrl || DEFAULT_WALLPAPER
   const username = bootConfig?.username || 'Visitor'
   const isAppOpen = (appId: string) => openApps.some(app => app.id === appId)
 
@@ -104,7 +116,8 @@ export function Desktop({ onRestart, onShutdown, recentApps, onAddRecentApp }: D
       style={{
         backgroundImage: `url(${wallpaperUrl})`,
         backgroundSize: 'cover',
-        backgroundPosition: 'center'
+        backgroundPosition: 'center',
+        fontSize: `${settings.fontSize}px`
       }}
       onClick={handleDesktopClick}
     >
@@ -168,12 +181,39 @@ export function Desktop({ onRestart, onShutdown, recentApps, onAddRecentApp }: D
         </DraggableWindow>
       )}
 
+      {isAppOpen('settings') && (
+        <DraggableWindow
+          initialX={150}
+          initialY={90}
+          width={APP_CONFIG.settings.width}
+          height={APP_CONFIG.settings.height}
+          zIndex={getZIndex('settings')}
+          onFocus={() => setFocusedApp('settings')}
+        >
+          <Settings onClose={() => closeApp('settings')} />
+        </DraggableWindow>
+      )}
+
+      {isAppOpen('fileexplorer') && (
+        <DraggableWindow
+          initialX={120}
+          initialY={50}
+          width={APP_CONFIG.fileexplorer.width}
+          height={APP_CONFIG.fileexplorer.height}
+          zIndex={getZIndex('fileexplorer')}
+          onFocus={() => setFocusedApp('fileexplorer')}
+        >
+          <FileExplorer onClose={() => closeApp('fileexplorer')} onOpenApp={openApp} />
+        </DraggableWindow>
+      )}
+
       <Taskbar 
         onStartClick={() => setIsStartMenuOpen(!isStartMenuOpen)}
         isStartMenuOpen={isStartMenuOpen}
         openApps={openApps}
         onReorderApps={setOpenApps}
         onAppClick={handleAppClick}
+        onOpenApp={openApp}
         onRestart={onRestart}
         onShutdown={onShutdown}
         recentApps={recentApps}
@@ -197,4 +237,6 @@ const DEMO_ICONS: FileNode[] = [
   { id: 'projects', parentId: 'desktop', name: 'Projects', type: 'DIRECTORY', content: null },
   { id: 'terminal', parentId: 'desktop', name: 'Terminal', type: 'SHORTCUT', content: 'app:terminal' },
   { id: 'task-manager', parentId: 'desktop', name: 'Task Manager', type: 'SHORTCUT', content: 'app:taskmanager' },
+  { id: 'settings', parentId: 'desktop', name: 'Settings', type: 'SHORTCUT', content: 'app:settings' },
+  { id: 'file-explorer', parentId: 'desktop', name: 'File Explorer', type: 'SHORTCUT', content: 'app:fileexplorer' },
 ]
