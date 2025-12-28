@@ -30,6 +30,7 @@ export interface OpenApp {
   id: string
   name: string
   icon: string
+  file?: FileNode | null
 }
 
 export interface RecentApp {

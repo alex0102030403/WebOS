@@ -25,8 +25,7 @@ public class FileSystemService {
      */
     List<FileNode> mft = new ArrayList<>(List.of(
         new FileNode("desktop", null, "Desktop", FileType.DIRECTORY, null),
-        new FileNode("resume", "desktop", "Resume.pdf", FileType.FILE, 
-            "Senior Software Engineer with 10+ years of experience in Java, cloud architecture, and distributed systems."),
+        new FileNode("cv", "desktop", "My CV", FileType.SHORTCUT, "app:cvviewer"),
         new FileNode("github", "desktop", "GitHub", FileType.SHORTCUT, "https://github.com/webos-portfolio"),
         new FileNode("about", "desktop", "About Me.txt", FileType.FILE, 
             "Welcome to my WebOS Portfolio! I'm passionate about building innovative software solutions."),
@@ -35,6 +34,7 @@ public class FileSystemService {
         new FileNode("task-manager", "desktop", "Task Manager", FileType.SHORTCUT, "app:taskmanager"),
         new FileNode("settings", "desktop", "Settings", FileType.SHORTCUT, "app:settings"),
         new FileNode("file-explorer", "desktop", "File Explorer", FileType.SHORTCUT, "app:fileexplorer"),
+        new FileNode("chrome", "desktop", "Chrome", FileType.SHORTCUT, "app:chrome"),
         new FileNode("linkedin", "desktop", "LinkedIn", FileType.SHORTCUT, "https://linkedin.com/in/webos-portfolio"),
         new FileNode("project-webos", "projects", "WebOS Portfolio", FileType.FILE, 
             "A browser-based Windows 11 simulation powered by Java 25 backend."),

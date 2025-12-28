@@ -4,7 +4,7 @@ import type { FileNode } from '../../types'
 
 interface FileExplorerProps {
   onClose: () => void
-  onOpenApp?: (appId: string) => void
+  onOpenApp?: (appId: string, file?: FileNode) => void
 }
 
 interface BreadcrumbItem {
@@ -23,8 +23,6 @@ export function FileExplorer({ onClose, onOpenApp }: FileExplorerProps) {
   const [nodes, setNodes] = useState<FileNode[]>([])
   const [selectedNode, setSelectedNode] = useState<FileNode | null>(null)
   const [breadcrumbPath, setBreadcrumbPath] = useState<BreadcrumbItem[]>([{ id: 'desktop', name: 'Desktop' }])
-  const [previewContent, setPreviewContent] = useState<string | null>(null)
-  const [previewNode, setPreviewNode] = useState<FileNode | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -53,8 +51,6 @@ export function FileExplorer({ onClose, onOpenApp }: FileExplorerProps) {
     setCurrentParentId(node.id)
     setBreadcrumbPath(prev => [...prev, { id: node.id, name: node.name }])
     setSelectedNode(null)
-    setPreviewContent(null)
-    setPreviewNode(null)
   }
 
   function navigateToBreadcrumb(index: number) {
@@ -64,8 +60,6 @@ export function FileExplorer({ onClose, onOpenApp }: FileExplorerProps) {
     setCurrentParentId(targetItem.id)
     setBreadcrumbPath(prev => prev.slice(0, index + 1))
     setSelectedNode(null)
-    setPreviewContent(null)
-    setPreviewNode(null)
   }
 
   function navigateBack() {
@@ -75,13 +69,12 @@ export function FileExplorer({ onClose, onOpenApp }: FileExplorerProps) {
     navigateToBreadcrumb(parentIndex)
   }
 
-  async function handleFilePreview(node: FileNode) {
+  async function handleFileOpen(node: FileNode) {
     if (node.type !== 'FILE') return
     
     try {
       const fullNode = await fetchNodeById(node.id)
-      setPreviewContent(fullNode.content)
-      setPreviewNode(fullNode)
+      onOpenApp?.('notepad', fullNode)
     } catch (err) {
       console.error('Failed to fetch file content:', err)
       setError('Failed to load file content')
@@ -94,7 +87,7 @@ export function FileExplorer({ onClose, onOpenApp }: FileExplorerProps) {
     if (node.content.startsWith('app:')) {
       const appId = node.content.replace('app:', '')
       onOpenApp?.(appId)
-    } else if (node.content.startsWith('http')) {
+    } else if (node.content.startsWith('http') || node.content.startsWith('/')) {
       window.open(node.content, '_blank')
     }
   }
@@ -103,7 +96,7 @@ export function FileExplorer({ onClose, onOpenApp }: FileExplorerProps) {
     if (node.type === 'DIRECTORY') {
       navigateToDirectory(node)
     } else if (node.type === 'FILE') {
-      handleFilePreview(node)
+      handleFileOpen(node)
     } else if (node.type === 'SHORTCUT') {
       handleShortcut(node)
     }
@@ -112,11 +105,6 @@ export function FileExplorer({ onClose, onOpenApp }: FileExplorerProps) {
   function handleNodeClick(e: React.MouseEvent, node: FileNode) {
     e.stopPropagation()
     setSelectedNode(node)
-  }
-
-  function closePreview() {
-    setPreviewContent(null)
-    setPreviewNode(null)
   }
 
   const isAtRoot = breadcrumbPath.length <= 1
@@ -213,27 +201,6 @@ export function FileExplorer({ onClose, onOpenApp }: FileExplorerProps) {
             </div>
           )}
         </div>
-
-
-        {/* Preview Panel */}
-        {previewContent !== null && previewNode && (
-          <div className="w-64 border-l border-gray-700 bg-gray-800/50 flex flex-col">
-            <div className="flex items-center justify-between px-3 py-2 border-b border-gray-700">
-              <span className="text-sm font-medium truncate">{previewNode.name}</span>
-              <button
-                onClick={closePreview}
-                className="text-gray-400 hover:text-white transition-colors text-sm"
-              >
-                ✕
-              </button>
-            </div>
-            <div className="flex-1 p-3 overflow-auto">
-              <pre className="text-xs text-gray-300 whitespace-pre-wrap font-mono">
-                {previewContent || '(empty file)'}
-              </pre>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   )

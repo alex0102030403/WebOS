@@ -7,6 +7,9 @@ import { TaskManager } from '../task-manager/TaskManager'
 import { Terminal } from '../terminal/Terminal'
 import { Settings } from '../settings/Settings'
 import { FileExplorer } from '../file-explorer/FileExplorer'
+import { ChromeBrowser } from '../chrome/ChromeBrowser'
+import { Notepad } from '../notepad/Notepad'
+import { CVViewer } from '../cv-viewer/CVViewer'
 import { useSettings } from '../../context/SettingsContext'
 import { fetchFileNodes, fetchBootConfig } from '../../api'
 import type { FileNode, BootConfig, OpenApp, RecentApp } from '../../types'
@@ -18,6 +21,9 @@ const APP_CONFIG: Record<string, { name: string; icon: string; width: number; he
   taskmanager: { name: 'Task Manager', icon: '📊', width: 600, height: 400 },
   settings: { name: 'Settings', icon: '⚙️', width: 500, height: 550 },
   fileexplorer: { name: 'File Explorer', icon: '📂', width: 700, height: 500 },
+  chrome: { name: 'Chrome', icon: '🌐', width: 900, height: 600 },
+  notepad: { name: 'Notepad', icon: '📝', width: 600, height: 450 },
+  cvviewer: { name: 'CV Viewer', icon: '📄', width: 650, height: 700 },
 }
 
 interface DesktopProps {
@@ -65,26 +71,51 @@ export function Desktop({ onRestart, onShutdown, recentApps, onAddRecentApp }: D
     loadDesktop()
   }, [])
 
-  function openApp(appId: string) {
+  function openApp(appId: string, file?: FileNode) {
     const config = APP_CONFIG[appId]
     if (!config) return
     
     onAddRecentApp({ id: appId, name: config.name, icon: config.icon })
     
-    if (openApps.some(app => app.id === appId)) return
+    // For notepad, allow multiple instances with different files
+    if (appId === 'notepad' && file) {
+      const instanceId = `notepad-${file.id}`
+      if (openApps.some(app => app.id === instanceId)) {
+        setFocusedApp(instanceId)
+        return
+      }
+      setOpenApps(prev => [...prev, { 
+        id: instanceId, 
+        name: `${file.name} - Notepad`,
+        icon: config.icon,
+        file 
+      }])
+      setFocusedApp(instanceId)
+      return
+    }
+    
+    if (openApps.some(app => app.id === appId)) {
+      setFocusedApp(appId)
+      return
+    }
     setOpenApps(prev => [...prev, { id: appId, ...config }])
+    setFocusedApp(appId)
   }
 
   function handleIconClick(node: FileNode) {
     if (node.type === 'SHORTCUT' && node.content?.startsWith('http')) {
       window.open(node.content, '_blank')
+    } else if (node.type === 'SHORTCUT' && node.content?.startsWith('/')) {
+      // Open local files (like PDFs) in new tab
+      window.open(node.content, '_blank')
     } else if (node.type === 'SHORTCUT' && node.content?.startsWith('app:')) {
       const appName = node.content.replace('app:', '')
       openApp(appName)
     } else if (node.type === 'DIRECTORY') {
-      console.log('Open directory:', node.id)
-    } else {
-      console.log('Open file:', node.name, node.content)
+      openApp('fileexplorer')
+    } else if (node.type === 'FILE') {
+      // Open text files in Notepad
+      openApp('notepad', node)
     }
   }
 
@@ -164,7 +195,11 @@ export function Desktop({ onRestart, onShutdown, recentApps, onAddRecentApp }: D
           zIndex={getZIndex('taskmanager')}
           onFocus={() => setFocusedApp('taskmanager')}
         >
-          <TaskManager onClose={() => closeApp('taskmanager')} />
+          <TaskManager 
+            onClose={() => closeApp('taskmanager')} 
+            openApps={openApps}
+            onCloseApp={closeApp}
+          />
         </DraggableWindow>
       )}
 
@@ -207,6 +242,53 @@ export function Desktop({ onRestart, onShutdown, recentApps, onAddRecentApp }: D
         </DraggableWindow>
       )}
 
+      {isAppOpen('chrome') && (
+        <DraggableWindow
+          initialX={80}
+          initialY={40}
+          width={APP_CONFIG.chrome.width}
+          height={APP_CONFIG.chrome.height}
+          zIndex={getZIndex('chrome')}
+          onFocus={() => setFocusedApp('chrome')}
+        >
+          <ChromeBrowser onClose={() => closeApp('chrome')} />
+        </DraggableWindow>
+      )}
+
+      {/* Render all notepad instances */}
+      {openApps
+        .filter(app => app.id.startsWith('notepad'))
+        .map((app, index) => (
+          <DraggableWindow
+            key={app.id}
+            initialX={140 + index * 30}
+            initialY={70 + index * 30}
+            width={APP_CONFIG.notepad.width}
+            height={APP_CONFIG.notepad.height}
+            zIndex={getZIndex(app.id)}
+            onFocus={() => setFocusedApp(app.id)}
+          >
+            <Notepad 
+              onClose={() => closeApp(app.id)} 
+              file={app.file}
+            />
+          </DraggableWindow>
+        ))
+      }
+
+      {isAppOpen('cvviewer') && (
+        <DraggableWindow
+          initialX={100}
+          initialY={30}
+          width={APP_CONFIG.cvviewer.width}
+          height={APP_CONFIG.cvviewer.height}
+          zIndex={getZIndex('cvviewer')}
+          onFocus={() => setFocusedApp('cvviewer')}
+        >
+          <CVViewer onClose={() => closeApp('cvviewer')} />
+        </DraggableWindow>
+      )}
+
       <Taskbar 
         onStartClick={() => setIsStartMenuOpen(!isStartMenuOpen)}
         isStartMenuOpen={isStartMenuOpen}
@@ -231,7 +313,7 @@ const DEMO_CONFIG: BootConfig = {
 }
 
 const DEMO_ICONS: FileNode[] = [
-  { id: 'resume', parentId: 'desktop', name: 'Resume.pdf', type: 'FILE', content: 'My Resume' },
+  { id: 'cv', parentId: 'desktop', name: 'My CV', type: 'SHORTCUT', content: 'app:cvviewer' },
   { id: 'github', parentId: 'desktop', name: 'GitHub', type: 'SHORTCUT', content: 'https://github.com' },
   { id: 'about', parentId: 'desktop', name: 'About Me.txt', type: 'FILE', content: 'About me content' },
   { id: 'projects', parentId: 'desktop', name: 'Projects', type: 'DIRECTORY', content: null },
@@ -239,4 +321,5 @@ const DEMO_ICONS: FileNode[] = [
   { id: 'task-manager', parentId: 'desktop', name: 'Task Manager', type: 'SHORTCUT', content: 'app:taskmanager' },
   { id: 'settings', parentId: 'desktop', name: 'Settings', type: 'SHORTCUT', content: 'app:settings' },
   { id: 'file-explorer', parentId: 'desktop', name: 'File Explorer', type: 'SHORTCUT', content: 'app:fileexplorer' },
+  { id: 'chrome', parentId: 'desktop', name: 'Chrome', type: 'SHORTCUT', content: 'app:chrome' },
 ]

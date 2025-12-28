@@ -2,6 +2,11 @@ C:\Users\alexm\Desktop\Portofolio\src\main\java\io\webos\portfolio\boot\boundary
 C:\Users\alexm\Desktop\Portofolio\src\main\java\io\webos\portfolio\boot\control\BootService.java
 C:\Users\alexm\Desktop\Portofolio\src\main\java\io\webos\portfolio\boot\entity\BootConfig.java
 C:\Users\alexm\Desktop\Portofolio\src\main\java\io\webos\portfolio\boot\package-info.java
+C:\Users\alexm\Desktop\Portofolio\src\main\java\io\webos\portfolio\browser\boundary\BrowserResource.java
+C:\Users\alexm\Desktop\Portofolio\src\main\java\io\webos\portfolio\browser\control\BadGatewayException.java
+C:\Users\alexm\Desktop\Portofolio\src\main\java\io\webos\portfolio\browser\control\BrowserService.java
+C:\Users\alexm\Desktop\Portofolio\src\main\java\io\webos\portfolio\browser\entity\BrowserConfig.java
+C:\Users\alexm\Desktop\Portofolio\src\main\java\io\webos\portfolio\browser\package-info.java
 C:\Users\alexm\Desktop\Portofolio\src\main\java\io\webos\portfolio\filesystem\boundary\FileNodesResource.java
 C:\Users\alexm\Desktop\Portofolio\src\main\java\io\webos\portfolio\filesystem\control\FileSystemService.java
 C:\Users\alexm\Desktop\Portofolio\src\main\java\io\webos\portfolio\filesystem\entity\FileNode.java
