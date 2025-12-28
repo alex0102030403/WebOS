@@ -1,0 +1,23 @@
+services:
+  # Java Backend API
+  - type: web
+    name: webos-api
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: PORT
+        value: 8080
+
+  # React Frontend (Static Site)
+  - type: web
+    name: webos-frontend
+    runtime: static
+    buildCommand: cd webos-ui && npm install && npm run build
+    staticPublishPath: webos-ui/dist
+    routes:
+      - type: rewrite
+        source: /api/*
+        destination: https://webos-api.onrender.com/*
+    envVars:
+      - key: NODE_VERSION
+        value: 20

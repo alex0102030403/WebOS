@@ -1,5 +1,6 @@
 import type { FileNode, BootConfig, CommandResult } from '../types'
 
+// Use relative URL - works with Render's rewrite rules
 const API_BASE = '/api'
 
 export async function fetchBootConfig(): Promise<BootConfig> {
