@@ -6,7 +6,7 @@ import { DraggableWindow } from './DraggableWindow'
 import { TaskManager } from '../task-manager/TaskManager'
 import { Terminal } from '../terminal/Terminal'
 import { fetchFileNodes, fetchBootConfig } from '../../api'
-import type { FileNode, BootConfig, OpenApp } from '../../types'
+import type { FileNode, BootConfig, OpenApp, RecentApp } from '../../types'
 
 const DEFAULT_WALLPAPER = 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=1920&q=80'
 
@@ -15,7 +15,14 @@ const APP_CONFIG: Record<string, { name: string; icon: string; width: number; he
   taskmanager: { name: 'Task Manager', icon: '📊', width: 600, height: 400 },
 }
 
-export function Desktop() {
+interface DesktopProps {
+  onRestart: () => void
+  onShutdown: () => void
+  recentApps: RecentApp[]
+  onAddRecentApp: (app: Omit<RecentApp, 'timestamp'>) => void
+}
+
+export function Desktop({ onRestart, onShutdown, recentApps, onAddRecentApp }: DesktopProps) {
   const [icons, setIcons] = useState<FileNode[]>([])
   const [bootConfig, setBootConfig] = useState<BootConfig | null>(null)
   const [selectedIcon, setSelectedIcon] = useState<FileNode | null>(null)
@@ -48,9 +55,12 @@ export function Desktop() {
   }, [])
 
   function openApp(appId: string) {
-    if (openApps.some(app => app.id === appId)) return
     const config = APP_CONFIG[appId]
     if (!config) return
+    
+    onAddRecentApp({ id: appId, name: config.name, icon: config.icon })
+    
+    if (openApps.some(app => app.id === appId)) return
     setOpenApps(prev => [...prev, { id: appId, ...config }])
   }
 
@@ -164,6 +174,10 @@ export function Desktop() {
         openApps={openApps}
         onReorderApps={setOpenApps}
         onAppClick={handleAppClick}
+        onRestart={onRestart}
+        onShutdown={onShutdown}
+        recentApps={recentApps}
+        onAddRecentApp={onAddRecentApp}
       />
     </div>
   )

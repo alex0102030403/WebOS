@@ -31,3 +31,10 @@ export interface OpenApp {
   name: string
   icon: string
 }
+
+export interface RecentApp {
+  id: string
+  name: string
+  icon: string
+  timestamp: number
+}

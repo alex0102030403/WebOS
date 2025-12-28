@@ -6,8 +6,8 @@ This plan implements the Windows icon power menu and search panel features for t
 
 ## Tasks
 
-- [ ] 1. Implement PowerMenu Component
-  - [ ] 1.1 Create PowerMenu component with restart and shutdown options
+- [x] 1. Implement PowerMenu Component
+  - [x] 1.1 Create PowerMenu component with restart and shutdown options
     - Create `webos-ui/src/components/desktop/PowerMenu.tsx`
     - Implement PowerMenuProps interface with isOpen, onClose, onRestart, onShutdown
     - Render backdrop overlay for click-outside detection
@@ -23,8 +23,8 @@ This plan implements the Windows icon power menu and search panel features for t
     - Test that clicking backdrop closes the menu
     - **Validates: Requirements 1.1, 1.2**
 
-- [ ] 2. Implement SearchPanel Component
-  - [ ] 2.1 Create SearchPanel component structure
+- [x] 2. Implement SearchPanel Component
+  - [x] 2.1 Create SearchPanel component structure
     - Create `webos-ui/src/components/desktop/SearchPanel.tsx`
     - Implement SearchPanelProps interface
     - Create RecentApp type in types/index.ts
@@ -33,7 +33,7 @@ This plan implements the Windows icon power menu and search panel features for t
     - Style with dark theme matching Windows 11 aesthetics
     - _Requirements: 2.1, 2.2, 6.1, 6.2, 6.3, 6.4_
 
-  - [ ] 2.2 Implement search input with filtering
+  - [x] 2.2 Implement search input with filtering
     - Add search input field at top of panel
     - Implement search state and onChange handler
     - Filter displayed apps based on search query (case-insensitive)
@@ -45,7 +45,7 @@ This plan implements the Windows icon power menu and search panel features for t
     - Verify filtered results contain only matching apps
     - **Validates: Requirements 2.4**
 
-  - [ ] 2.4 Implement Recent Apps section
+  - [x] 2.4 Implement Recent Apps section
     - Display "Recent" section header
     - Render list of recent apps (max 5) with icon and name
     - Show placeholder "No recent apps" when list is empty
@@ -58,14 +58,14 @@ This plan implements the Windows icon power menu and search panel features for t
     - Verify displayed count is at most 5
     - **Validates: Requirements 3.2**
 
-  - [ ] 2.6 Implement Top Apps grid section
+  - [x] 2.6 Implement Top Apps grid section
     - Display "Top apps" section header
     - Render 6 apps in 3x2 grid layout
     - Each app shows icon and name
     - Handle app click to trigger onAppClick callback
     - _Requirements: 4.1, 4.2, 4.3, 4.4_
 
-  - [ ] 2.7 Implement Quick Search section
+  - [x] 2.7 Implement Quick Search section
     - Display "Quick searches" section header
     - Render 6 quick search chips: Focus settings, Sound settings, Bluetooth & devices, Display settings, Color settings, Search settings
     - Handle chip click (placeholder action for now)
@@ -76,11 +76,11 @@ This plan implements the Windows icon power menu and search panel features for t
     - Verify all Top Apps and Quick Search items render icon and name
     - **Validates: Requirements 4.3, 5.3**
 
-- [ ] 3. Checkpoint - Components Complete
+- [x] 3. Checkpoint - Components Complete
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 4. Integrate with Taskbar and App State
-  - [ ] 4.1 Update Taskbar to manage PowerMenu and SearchPanel state
+- [x] 4. Integrate with Taskbar and App State
+  - [x] 4.1 Update Taskbar to manage PowerMenu and SearchPanel state
     - Add isPowerMenuOpen and isSearchPanelOpen state to Taskbar
     - Update Windows icon click to toggle PowerMenu
     - Update search bar click to toggle SearchPanel
@@ -88,7 +88,7 @@ This plan implements the Windows icon power menu and search panel features for t
     - Render PowerMenu and SearchPanel components
     - _Requirements: 1.1, 2.1_
 
-  - [ ] 4.2 Update App.tsx with restart and recent apps state
+  - [x] 4.2 Update App.tsx with restart and recent apps state
     - Add recentApps state with useState<RecentApp[]>([])
     - Implement handleRestart function that clears recentApps and sets isBooted to false
     - Implement handleShutdown function that calls window.close()
@@ -102,7 +102,7 @@ This plan implements the Windows icon power menu and search panel features for t
     - Verify restart clears recentApps array
     - **Validates: Requirements 1.5, 3.5**
 
-  - [ ] 4.4 Update Desktop to pass props to Taskbar
+  - [x] 4.4 Update Desktop to pass props to Taskbar
     - Accept onRestart, onShutdown, recentApps props
     - Pass through to Taskbar component
     - _Requirements: 1.5, 3.4_
@@ -112,15 +112,15 @@ This plan implements the Windows icon power menu and search panel features for t
     - Verify clicking app invokes onAppClick with correct ID
     - **Validates: Requirements 3.4, 4.4**
 
-- [ ] 5. Implement Recent Apps Tracking
-  - [ ] 5.1 Add recent apps tracking when opening apps
+- [x] 5. Implement Recent Apps Tracking
+  - [x] 5.1 Add recent apps tracking when opening apps
     - Update Desktop to track app opens in recentApps state
     - Implement addRecentApp function that adds to front of list
     - Limit list to 5 most recent (remove oldest if over limit)
     - Avoid duplicates (move to front if already in list)
     - _Requirements: 3.2, 3.4, 3.5_
 
-- [ ] 6. Final Checkpoint - Full Integration
+- [x] 6. Final Checkpoint - Full Integration
   - Ensure all tests pass, ask the user if questions arise.
   - Verify Windows icon → PowerMenu → Restart/Shutdown flow
   - Verify Search bar → SearchPanel → Recent/Top apps flow

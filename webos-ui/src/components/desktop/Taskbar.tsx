@@ -1,18 +1,26 @@
 import { useState, useRef, useEffect } from 'react'
-import type { OpenApp } from '../../types'
+import { PowerMenu } from './PowerMenu'
+import { SearchPanel } from './SearchPanel'
+import type { OpenApp, RecentApp } from '../../types'
 
 interface TaskbarProps {
-  onStartClick: () => void
-  isStartMenuOpen: boolean
+  onStartClick?: () => void
+  isStartMenuOpen?: boolean
   openApps: OpenApp[]
   onReorderApps: (apps: OpenApp[]) => void
   onAppClick: (appId: string) => void
+  onRestart: () => void
+  onShutdown: () => void
+  recentApps: RecentApp[]
+  onAddRecentApp: (app: Omit<RecentApp, 'timestamp'>) => void
 }
 
-export function Taskbar({ onStartClick, isStartMenuOpen, openApps, onReorderApps, onAppClick }: TaskbarProps) {
+export function Taskbar({ openApps, onReorderApps, onAppClick, onRestart, onShutdown, recentApps, onAddRecentApp }: TaskbarProps) {
   const [currentTime, setCurrentTime] = useState(new Date())
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null)
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null)
+  const [isPowerMenuOpen, setIsPowerMenuOpen] = useState(false)
+  const [isSearchPanelOpen, setIsSearchPanelOpen] = useState(false)
   const dragNodeRef = useRef<HTMLButtonElement | null>(null)
 
   useEffect(() => {
@@ -58,6 +66,23 @@ export function Taskbar({ onStartClick, isStartMenuOpen, openApps, onReorderApps
     setDragOverIndex(null)
   }
 
+  function handleWindowsIconClick(e: React.MouseEvent) {
+    e.stopPropagation()
+    setIsPowerMenuOpen(!isPowerMenuOpen)
+    setIsSearchPanelOpen(false)
+  }
+
+  function handleSearchBarClick(e: React.MouseEvent) {
+    e.stopPropagation()
+    setIsSearchPanelOpen(!isSearchPanelOpen)
+    setIsPowerMenuOpen(false)
+  }
+
+  function handleSearchAppClick(appId: string) {
+    onAppClick(appId)
+    setIsSearchPanelOpen(false)
+  }
+
   const timeString = currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
   const dateString = currentTime.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })
 
@@ -67,8 +92,8 @@ export function Taskbar({ onStartClick, isStartMenuOpen, openApps, onReorderApps
       <div className="flex items-center gap-1 bg-[#2d2d2d]/60 rounded-lg px-2 py-1">
         {/* Windows Start Button */}
         <TaskbarButton
-          onClick={onStartClick}
-          isActive={isStartMenuOpen}
+          onClick={handleWindowsIconClick}
+          isActive={isPowerMenuOpen}
           title="Start"
         >
           <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
@@ -77,7 +102,10 @@ export function Taskbar({ onStartClick, isStartMenuOpen, openApps, onReorderApps
         </TaskbarButton>
 
         {/* Search Bar */}
-        <div className="flex items-center gap-2 bg-[#3d3d3d]/50 hover:bg-[#4d4d4d]/50 rounded-full px-3 py-1.5 mx-1 cursor-text transition-colors">
+        <div 
+          onClick={handleSearchBarClick}
+          className={`flex items-center gap-2 bg-[#3d3d3d]/50 hover:bg-[#4d4d4d]/50 rounded-full px-3 py-1.5 mx-1 cursor-pointer transition-colors ${isSearchPanelOpen ? 'bg-[#4d4d4d]/50' : ''}`}
+        >
           <svg className="w-4 h-4 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
@@ -125,13 +153,30 @@ export function Taskbar({ onStartClick, isStartMenuOpen, openApps, onReorderApps
           <span className="text-[11px] text-white/70">{dateString}</span>
         </div>
       </div>
+
+      {/* Power Menu */}
+      <PowerMenu
+        isOpen={isPowerMenuOpen}
+        onClose={() => setIsPowerMenuOpen(false)}
+        onRestart={onRestart}
+        onShutdown={onShutdown}
+      />
+
+      {/* Search Panel */}
+      <SearchPanel
+        isOpen={isSearchPanelOpen}
+        onClose={() => setIsSearchPanelOpen(false)}
+        recentApps={recentApps}
+        onAppClick={handleSearchAppClick}
+        onAddRecentApp={onAddRecentApp}
+      />
     </div>
   )
 }
 
 interface TaskbarButtonProps {
   children: React.ReactNode
-  onClick?: () => void
+  onClick?: React.MouseEventHandler<HTMLButtonElement>
   isActive?: boolean
   title?: string
   draggable?: boolean
