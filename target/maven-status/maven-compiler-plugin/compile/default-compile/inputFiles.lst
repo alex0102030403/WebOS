@@ -7,6 +7,11 @@ C:\Users\alexm\Desktop\Portofolio\src\main\java\io\webos\portfolio\browser\contr
 C:\Users\alexm\Desktop\Portofolio\src\main\java\io\webos\portfolio\browser\control\BrowserService.java
 C:\Users\alexm\Desktop\Portofolio\src\main\java\io\webos\portfolio\browser\entity\BrowserConfig.java
 C:\Users\alexm\Desktop\Portofolio\src\main\java\io\webos\portfolio\browser\package-info.java
+C:\Users\alexm\Desktop\Portofolio\src\main\java\io\webos\portfolio\compiler\boundary\CompilerResource.java
+C:\Users\alexm\Desktop\Portofolio\src\main\java\io\webos\portfolio\compiler\control\JShellService.java
+C:\Users\alexm\Desktop\Portofolio\src\main\java\io\webos\portfolio\compiler\entity\ExecutionRequest.java
+C:\Users\alexm\Desktop\Portofolio\src\main\java\io\webos\portfolio\compiler\entity\ExecutionResult.java
+C:\Users\alexm\Desktop\Portofolio\src\main\java\io\webos\portfolio\compiler\package-info.java
 C:\Users\alexm\Desktop\Portofolio\src\main\java\io\webos\portfolio\filesystem\boundary\FileNodesResource.java
 C:\Users\alexm\Desktop\Portofolio\src\main\java\io\webos\portfolio\filesystem\control\FileSystemService.java
 C:\Users\alexm\Desktop\Portofolio\src\main\java\io\webos\portfolio\filesystem\entity\FileNode.java

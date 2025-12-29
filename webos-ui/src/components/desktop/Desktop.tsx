@@ -11,6 +11,7 @@ import { ChromeBrowser } from '../chrome/ChromeBrowser'
 import { Notepad } from '../notepad/Notepad'
 import { CVViewer } from '../cv-viewer/CVViewer'
 import { Paint } from '../paint/Paint'
+import { JShellStudio } from '../jshell-studio/JShellStudio'
 import { useSettings } from '../../context/SettingsContext'
 import { fetchFileNodes, fetchBootConfig } from '../../api'
 import type { FileNode, BootConfig, OpenApp, RecentApp } from '../../types'
@@ -26,6 +27,7 @@ const APP_CONFIG: Record<string, { name: string; icon: string; width: number; he
   notepad: { name: 'Notepad', icon: '📝', width: 600, height: 450 },
   cvviewer: { name: 'CV Viewer', icon: '📄', width: 650, height: 700 },
   paint: { name: 'Paint', icon: '🎨', width: 900, height: 700 },
+  jshellstudio: { name: 'JShell Studio', icon: '☕', width: 800, height: 600 },
 }
 
 interface DesktopProps {
@@ -304,6 +306,19 @@ export function Desktop({ onRestart, onShutdown, recentApps, onAddRecentApp }: D
         </DraggableWindow>
       )}
 
+      {isAppOpen('jshellstudio') && (
+        <DraggableWindow
+          initialX={90}
+          initialY={50}
+          width={APP_CONFIG.jshellstudio.width}
+          height={APP_CONFIG.jshellstudio.height}
+          zIndex={getZIndex('jshellstudio')}
+          onFocus={() => setFocusedApp('jshellstudio')}
+        >
+          <JShellStudio onClose={() => closeApp('jshellstudio')} />
+        </DraggableWindow>
+      )}
+
       <Taskbar 
         onStartClick={() => setIsStartMenuOpen(!isStartMenuOpen)}
         isStartMenuOpen={isStartMenuOpen}
@@ -339,4 +354,5 @@ const DEMO_ICONS: FileNode[] = [
   { id: 'file-explorer', parentId: 'desktop', name: 'File Explorer', type: 'SHORTCUT', content: 'app:fileexplorer' },
   { id: 'chrome', parentId: 'desktop', name: 'Chrome', type: 'SHORTCUT', content: 'app:chrome' },
   { id: 'paint', parentId: 'desktop', name: 'Paint', type: 'SHORTCUT', content: 'app:paint' },
+  { id: 'jshell-studio', parentId: 'desktop', name: 'JShell Studio', type: 'SHORTCUT', content: 'app:jshellstudio' },
 ]

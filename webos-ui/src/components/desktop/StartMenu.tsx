@@ -9,6 +9,7 @@ const PINNED_APPS = [
   { name: 'Task Manager', icon: '📊' },
   { name: 'File Explorer', icon: '📁' },
   { name: 'Chrome', icon: '🌐' },
+  { name: 'JShell Studio', icon: '☕' },
   { name: 'Settings', icon: '⚙️' },
 ]
 

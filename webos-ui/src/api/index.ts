@@ -82,3 +82,17 @@ export async function fetchAutocomplete(input: string): Promise<string[]> {
 export function createProcessesEventSource(): EventSource {
   return new EventSource(`${API_BASE}/processes`)
 }
+
+export interface ExecutionResponse {
+  output: string
+}
+
+export async function executeCode(code: string): Promise<ExecutionResponse> {
+  const response = await fetch(`${API_BASE}/compiler/execute`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ code })
+  })
+  if (!response.ok) throw new Error('Failed to execute code')
+  return response.json()
+}
