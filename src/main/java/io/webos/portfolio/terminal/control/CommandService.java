@@ -21,7 +21,7 @@ import java.util.stream.Stream;
 public class CommandService {
 
     static final List<String> COMMANDS = List.of(
-        "ls", "cat", "cd", "mkdir", "touch", "rm", "pwd", "uname", "whoami", "java", "help", "clear"
+        "ls", "cat", "cd", "mkdir", "touch", "rm", "pwd", "uname", "whoami", "java", "echo", "help", "clear"
     );
 
     @Inject
@@ -56,6 +56,7 @@ public class CommandService {
             case "uname" -> systemInfo();
             case "whoami" -> currentUser();
             case "java" -> javaCommand(parts);
+            case "echo" -> echo(input);
             default -> CommandResult.failure("Unknown command: " + command);
         };
     }
@@ -244,6 +245,82 @@ public class CommandService {
                 System.getProperty("os.arch")
             );
         return CommandResult.success(info);
+    }
+
+    /**
+     * Handles echo command with redirection.
+     * Supports: echo "content" > file (overwrite)
+     *           echo "content" >> file (append)
+     *           echo content (output to terminal)
+     */
+    CommandResult echo(String input) {
+        var afterEcho = input.length() > 4 ? input.substring(5).trim() : "";
+        
+        if (afterEcho.isEmpty()) {
+            return CommandResult.success("");
+        }
+        
+        if (afterEcho.contains(">>")) {
+            return handleAppend(afterEcho);
+        } else if (afterEcho.contains(">")) {
+            return handleOverwrite(afterEcho);
+        }
+        
+        return CommandResult.success(extractContent(afterEcho));
+    }
+
+    CommandResult handleOverwrite(String input) {
+        var redirectIndex = input.indexOf(">");
+        if (redirectIndex < 0) {
+            return CommandResult.failure("Invalid redirection syntax");
+        }
+        
+        var contentPart = input.substring(0, redirectIndex).trim();
+        var filename = input.substring(redirectIndex + 1).trim();
+        
+        if (filename.isEmpty()) {
+            return CommandResult.failure("No filename specified");
+        }
+        
+        var content = extractContent(contentPart);
+        this.fileSystemService.saveFile(this.currentDirectory, filename, content);
+        return CommandResult.success("");
+    }
+
+    CommandResult handleAppend(String input) {
+        var redirectIndex = input.indexOf(">>");
+        if (redirectIndex < 0) {
+            return CommandResult.failure("Invalid redirection syntax");
+        }
+        
+        var contentPart = input.substring(0, redirectIndex).trim();
+        var filename = input.substring(redirectIndex + 2).trim();
+        
+        if (filename.isEmpty()) {
+            return CommandResult.failure("No filename specified");
+        }
+        
+        var content = extractContent(contentPart);
+        var existing = this.fileSystemService.findByNameInParent(this.currentDirectory, filename);
+        var newContent = existing
+            .map(f -> f.content() != null ? f.content() + "\n" + content : content)
+            .orElse(content);
+        
+        this.fileSystemService.saveFile(this.currentDirectory, filename, newContent);
+        return CommandResult.success("");
+    }
+
+    String extractContent(String quoted) {
+        if (quoted == null || quoted.isEmpty()) {
+            return "";
+        }
+        if (quoted.startsWith("\"") && quoted.endsWith("\"") && quoted.length() >= 2) {
+            return quoted.substring(1, quoted.length() - 1);
+        }
+        if (quoted.startsWith("'") && quoted.endsWith("'") && quoted.length() >= 2) {
+            return quoted.substring(1, quoted.length() - 1);
+        }
+        return quoted;
     }
 
     CommandResult currentUser() {

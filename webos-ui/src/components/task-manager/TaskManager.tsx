@@ -27,6 +27,7 @@ const MEMORY_ESTIMATES: Record<string, number> = {
 
 export function TaskManager({ onClose, openApps, onCloseApp }: TaskManagerProps) {
   const [memoryJitter, setMemoryJitter] = useState<Record<string, number>>({})
+  const [kernelMemory, setKernelMemory] = useState(135_000_000)
 
   // Simulate memory fluctuation for realism
   useEffect(() => {
@@ -38,13 +39,13 @@ export function TaskManager({ onClose, openApps, onCloseApp }: TaskManagerProps)
         })
         return next
       })
+      // Also fluctuate kernel memory
+      setKernelMemory(120_000_000 + Math.random() * 30_000_000)
     }, 2000)
     return () => clearInterval(interval)
   }, [openApps])
 
   const processes: ProcessInfo[] = useMemo(() => {
-    const kernelMemory = 120_000_000 + Math.random() * 30_000_000
-    
     const kernel: ProcessInfo = {
       pid: '1',
       name: 'WebOS Kernel',
@@ -62,7 +63,7 @@ export function TaskManager({ onClose, openApps, onCloseApp }: TaskManagerProps)
     }))
 
     return [kernel, ...appProcesses]
-  }, [openApps, memoryJitter])
+  }, [openApps, memoryJitter, kernelMemory])
 
   const totalMemory = useMemo(() => 
     processes.reduce((sum, p) => sum + p.memoryBytes, 0), 

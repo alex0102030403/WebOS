@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { newMinesweeperGame, clickMinesweeperCell } from '../../api'
 import type { CellState, GameResponse } from '../../types'
 
@@ -8,6 +8,7 @@ interface MinesweeperProps {
 
 const GRID_SIZE = 10
 const SESSION_KEY = 'minesweeper-session-id'
+const LONG_PRESS_DURATION = 500 // ms for long-press to flag
 
 function generateSessionId(): string {
   return crypto.randomUUID()
@@ -49,6 +50,11 @@ export function Minesweeper({ onClose }: MinesweeperProps) {
   const [sessionId, setSessionId] = useState<string>('')
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  
+  // Touch handling refs for long-press detection
+  const touchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const touchStartRef = useRef<{ row: number; col: number } | null>(null)
+  const isLongPressRef = useRef(false)
 
   const startNewGame = useCallback(async (sid: string) => {
     setIsLoading(true)
@@ -114,6 +120,61 @@ export function Minesweeper({ onClose }: MinesweeperProps) {
     })
   }
 
+  // Toggle flag on a cell (used by both right-click and long-press)
+  function toggleFlag(row: number, col: number) {
+    if (gameStatus !== 'PLAYING') return
+    if (grid[row][col].revealed) return
+
+    setGrid(prev => {
+      const newGrid = prev.map(r => r.map(cell => ({ ...cell })))
+      newGrid[row][col].flagged = !newGrid[row][col].flagged
+      return newGrid
+    })
+  }
+
+  // Touch event handlers for mobile long-press to flag
+  function handleTouchStart(row: number, col: number) {
+    if (gameStatus !== 'PLAYING') return
+    if (grid[row][col].revealed) return
+
+    isLongPressRef.current = false
+    touchStartRef.current = { row, col }
+    
+    touchTimerRef.current = setTimeout(() => {
+      isLongPressRef.current = true
+      toggleFlag(row, col)
+      // Vibrate on flag (if supported)
+      if (navigator.vibrate) {
+        navigator.vibrate(50)
+      }
+    }, LONG_PRESS_DURATION)
+  }
+
+  function handleTouchEnd(row: number, col: number) {
+    // Clear the long-press timer
+    if (touchTimerRef.current) {
+      clearTimeout(touchTimerRef.current)
+      touchTimerRef.current = null
+    }
+
+    // If it wasn't a long press, treat as a tap (reveal cell)
+    if (!isLongPressRef.current && touchStartRef.current?.row === row && touchStartRef.current?.col === col) {
+      handleCellClick(row, col)
+    }
+
+    touchStartRef.current = null
+    isLongPressRef.current = false
+  }
+
+  function handleTouchMove() {
+    // Cancel long-press if user moves finger
+    if (touchTimerRef.current) {
+      clearTimeout(touchTimerRef.current)
+      touchTimerRef.current = null
+    }
+    touchStartRef.current = null
+  }
+
   async function handleNewGame() {
     const newSid = generateSessionId()
     localStorage.setItem(SESSION_KEY, newSid)
@@ -122,15 +183,18 @@ export function Minesweeper({ onClose }: MinesweeperProps) {
   }
 
   function renderCell(cell: CellState, row: number, col: number) {
-    const baseClasses = 'w-7 h-7 flex items-center justify-center text-sm font-bold border border-gray-400 transition-colors'
+    const baseClasses = 'w-7 h-7 flex items-center justify-center text-sm font-bold border border-gray-400 transition-colors select-none'
     
     if (!cell.revealed) {
       return (
         <button
           key={`${row}-${col}`}
-          className={`${baseClasses} bg-gray-300 hover:bg-gray-200 active:bg-gray-400`}
+          className={`${baseClasses} bg-gray-300 hover:bg-gray-200 active:bg-gray-400 touch-none`}
           onClick={() => handleCellClick(row, col)}
           onContextMenu={(e) => handleRightClick(e, row, col)}
+          onTouchStart={() => handleTouchStart(row, col)}
+          onTouchEnd={() => handleTouchEnd(row, col)}
+          onTouchMove={handleTouchMove}
           disabled={gameStatus !== 'PLAYING'}
         >
           {cell.flagged ? '🚩' : ''}
@@ -227,7 +291,7 @@ export function Minesweeper({ onClose }: MinesweeperProps) {
 
       {/* Status bar */}
       <div className="px-3 py-1 bg-gray-100 border-t border-gray-300 text-xs text-gray-600">
-        Left-click to reveal • Right-click to flag
+        Tap to reveal • Long-press to flag • Right-click to flag (desktop)
       </div>
     </div>
   )

@@ -1,7 +1,12 @@
-import { useState, useRef, useEffect, type KeyboardEvent } from 'react'
+/**
+ * MobileTerminal - Mobile-optimized Terminal wrapper
+ * Requirements: 8.1 - Touch-friendly input, larger font size, full-width layout
+ */
+
+import { useState, useRef, useEffect, type KeyboardEvent, type TouchEvent } from 'react'
 import { executeCommand, fetchTerminalContext, fetchAutocomplete } from '../../api'
 
-interface TerminalProps {
+interface MobileTerminalProps {
   onClose: () => void
   onFileSystemChange?: () => void
 }
@@ -13,7 +18,7 @@ interface HistoryEntry {
   path: string
 }
 
-export function Terminal({ onClose, onFileSystemChange }: TerminalProps) {
+export function MobileTerminal({ onClose, onFileSystemChange }: MobileTerminalProps) {
   const [input, setInput] = useState('')
   const [history, setHistory] = useState<HistoryEntry[]>([])
   const [commandHistory, setCommandHistory] = useState<string[]>([])
@@ -21,9 +26,12 @@ export function Terminal({ onClose, onFileSystemChange }: TerminalProps) {
   const [isExecuting, setIsExecuting] = useState(false)
   const [currentPath, setCurrentPath] = useState('/Desktop')
   const [suggestions, setSuggestions] = useState<string[]>([])
-  const [suggestionIndex, setSuggestionIndex] = useState(0)
+  const [showQuickCommands, setShowQuickCommands] = useState(true)
   const inputRef = useRef<HTMLInputElement>(null)
   const outputRef = useRef<HTMLDivElement>(null)
+
+  // Suppress unused variable warning
+  void onClose
 
   useEffect(() => {
     inputRef.current?.focus()
@@ -49,18 +57,18 @@ export function Terminal({ onClose, onFileSystemChange }: TerminalProps) {
 
     setIsExecuting(true)
     setSuggestions([])
+    setShowQuickCommands(false)
     setCommandHistory(prev => [...prev, trimmedInput])
     setHistoryIndex(-1)
 
-    // Handle clear command locally
     if (trimmedInput === 'clear') {
       setHistory([])
       setInput('')
       setIsExecuting(false)
+      setShowQuickCommands(true)
       return
     }
 
-    // Handle help command locally
     if (trimmedInput === 'help') {
       setHistory(prev => [...prev, {
         command: trimmedInput,
@@ -92,10 +100,8 @@ export function Terminal({ onClose, onFileSystemChange }: TerminalProps) {
         isError: !result.success,
         path: currentPath
       }])
-      // Refresh context after command (cd might have changed directory)
       await refreshContext()
       
-      // Notify parent of file system changes for commands that modify files
       const fsCommands = ['rm', 'mkdir', 'touch', 'echo']
       const cmd = trimmedInput.split(/\s+/)[0]
       if (result.success && fsCommands.includes(cmd)) {
@@ -116,37 +122,28 @@ export function Terminal({ onClose, onFileSystemChange }: TerminalProps) {
 
   async function handleTab() {
     if (suggestions.length === 0) {
-      // Fetch suggestions
       try {
         const results = await fetchAutocomplete(input)
         if (results.length === 1) {
-          // Single match - complete it
           applyCompletion(results[0])
         } else if (results.length > 1) {
           setSuggestions(results)
-          setSuggestionIndex(0)
         }
       } catch {
         // Ignore autocomplete errors
       }
-    } else {
-      // Cycle through suggestions
-      const nextIndex = (suggestionIndex + 1) % suggestions.length
-      setSuggestionIndex(nextIndex)
-      applyCompletion(suggestions[nextIndex])
     }
   }
 
   function applyCompletion(completion: string) {
     const parts = input.trim().split(/\s+/)
     if (parts.length <= 1 && !input.includes(' ')) {
-      // Completing command
       setInput(completion + ' ')
     } else {
-      // Completing argument
       parts[parts.length - 1] = completion
       setInput(parts.join(' ') + (completion.includes('.') ? '' : ' '))
     }
+    setSuggestions([])
   }
 
   function handleKeyDown(e: KeyboardEvent<HTMLInputElement>) {
@@ -156,7 +153,6 @@ export function Terminal({ onClose, onFileSystemChange }: TerminalProps) {
       return
     }
 
-    // Clear suggestions on any other key
     if (suggestions.length > 0 && e.key !== 'Tab') {
       setSuggestions([])
     }
@@ -186,10 +182,6 @@ export function Terminal({ onClose, onFileSystemChange }: TerminalProps) {
       setHistoryIndex(newIndex)
       setInput(commandHistory[commandHistory.length - 1 - newIndex] || '')
     }
-
-    if (e.key === 'Escape') {
-      setSuggestions([])
-    }
   }
 
   function handleTerminalClick() {
@@ -197,58 +189,102 @@ export function Terminal({ onClose, onFileSystemChange }: TerminalProps) {
   }
 
   function formatPath(path: string) {
-    // Show ~ for desktop, otherwise show last part of path
     if (path === '/Desktop') return '~'
     const parts = path.split('/')
     return parts[parts.length - 1] || '~'
   }
 
+  // Quick command buttons for touch-friendly input
+  function handleQuickCommand(cmd: string) {
+    setInput(cmd)
+    inputRef.current?.focus()
+  }
+
+  // Handle suggestion tap
+  function handleSuggestionTap(suggestion: string, e: TouchEvent) {
+    e.preventDefault()
+    applyCompletion(suggestion)
+    inputRef.current?.focus()
+  }
+
+  const quickCommands = ['ls', 'pwd', 'help', 'clear', 'cd ..', 'whoami']
+
   return (
     <div 
-      className="flex flex-col h-full bg-black text-green-400 font-mono text-sm rounded-lg overflow-hidden"
+      className="flex flex-col h-full bg-black text-green-400 font-mono"
       onClick={handleTerminalClick}
     >
-      <div 
-        data-window-header
-        className="flex items-center justify-between px-4 py-2 bg-gray-800 border-b border-gray-700 cursor-grab active:cursor-grabbing"
-      >
-        <span className="text-white text-sm font-medium">Terminal</span>
-        <button
-          onClick={onClose}
-          className="text-gray-400 hover:text-white transition-colors"
-        >
-          ✕
-        </button>
-      </div>
-
+      {/* Output area - larger text for mobile */}
       <div 
         ref={outputRef}
-        className="flex-1 overflow-auto p-5 space-y-3"
+        className="flex-1 overflow-auto p-4 space-y-4 text-base"
       >
-        <div className="text-gray-500 mb-2">
-          WebOS Terminal v1.0.0 - Type 'help' for available commands
+        <div className="text-gray-500 mb-3 text-sm">
+          WebOS Terminal v1.0.0 - Type 'help' for commands
         </div>
 
         {history.map((entry, index) => (
-          <div key={index} className="space-y-1">
-            <div className="flex gap-2">
+          <div key={index} className="space-y-2">
+            <div className="flex flex-wrap gap-1 items-center">
               <span className="text-blue-400">visitor@webos</span>
               <span className="text-purple-400">{formatPath(entry.path)}</span>
               <span className="text-white">$</span>
-              <span>{entry.command}</span>
+              <span className="break-all">{entry.command}</span>
             </div>
             {entry.output && (
-              <pre className={`whitespace-pre-wrap ${entry.isError ? 'text-red-400' : 'text-gray-300'}`}>
+              <pre className={`whitespace-pre-wrap break-words text-sm ${entry.isError ? 'text-red-400' : 'text-gray-300'}`}>
                 {entry.output}
               </pre>
             )}
           </div>
         ))}
 
-        <div className="flex gap-2 items-center">
+        {/* Current prompt */}
+        <div className="flex flex-wrap gap-1 items-center">
           <span className="text-blue-400">visitor@webos</span>
           <span className="text-purple-400">{formatPath(currentPath)}</span>
           <span className="text-white">$</span>
+          {isExecuting && <span className="animate-pulse ml-2">▌</span>}
+        </div>
+
+        {/* Autocomplete suggestions */}
+        {suggestions.length > 0 && (
+          <div className="flex flex-wrap gap-2 mt-2">
+            {suggestions.map((s) => (
+              <button
+                key={s}
+                onTouchEnd={(e) => handleSuggestionTap(s, e)}
+                onClick={() => applyCompletion(s)}
+                className="px-3 py-2 bg-gray-800 text-yellow-400 rounded-lg text-sm active:bg-gray-700"
+              >
+                {s}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Quick commands - touch-friendly buttons */}
+      {showQuickCommands && history.length === 0 && (
+        <div className="px-4 py-3 bg-gray-900 border-t border-gray-800">
+          <div className="text-xs text-gray-500 mb-2">Quick commands:</div>
+          <div className="flex flex-wrap gap-2">
+            {quickCommands.map(cmd => (
+              <button
+                key={cmd}
+                onClick={() => handleQuickCommand(cmd)}
+                className="px-3 py-2 bg-gray-800 text-green-400 rounded-lg text-sm active:bg-gray-700 transition-colors"
+              >
+                {cmd}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Input area - larger touch target */}
+      <div className="p-3 bg-gray-900 border-t border-gray-700">
+        <div className="flex gap-2">
           <input
             ref={inputRef}
             type="text"
@@ -256,22 +292,21 @@ export function Terminal({ onClose, onFileSystemChange }: TerminalProps) {
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             disabled={isExecuting}
-            className="flex-1 bg-transparent outline-none text-green-400 caret-green-400"
+            placeholder="Enter command..."
+            className="flex-1 bg-gray-800 text-green-400 px-4 py-3 rounded-lg text-base outline-none focus:ring-2 focus:ring-green-500 caret-green-400"
             autoComplete="off"
+            autoCapitalize="off"
+            autoCorrect="off"
             spellCheck={false}
           />
-          {isExecuting && <span className="animate-pulse">▌</span>}
+          <button
+            onClick={handleSubmit}
+            disabled={isExecuting || !input.trim()}
+            className="px-5 py-3 bg-green-600 text-white rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed active:bg-green-700 transition-colors"
+          >
+            Run
+          </button>
         </div>
-
-        {suggestions.length > 1 && (
-          <div className="text-gray-500 flex flex-wrap gap-4 mt-1">
-            {suggestions.map((s, i) => (
-              <span key={s} className={i === suggestionIndex ? 'text-yellow-400' : ''}>
-                {s}
-              </span>
-            ))}
-          </div>
-        )}
       </div>
     </div>
   )

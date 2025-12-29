@@ -5,6 +5,7 @@ import type { FileNode } from '../../types'
 interface FileExplorerProps {
   onClose: () => void
   onOpenApp?: (appId: string, file?: FileNode) => void
+  refreshTrigger?: number
 }
 
 interface BreadcrumbItem {
@@ -66,7 +67,7 @@ function FileIcon({ node, size = 'md' }: FileIconProps) {
   )
 }
 
-export function FileExplorer({ onClose, onOpenApp }: FileExplorerProps) {
+export function FileExplorer({ onClose, onOpenApp, refreshTrigger }: FileExplorerProps) {
   const [currentParentId, setCurrentParentId] = useState('desktop')
   const [nodes, setNodes] = useState<FileNode[]>([])
   const [selectedNode, setSelectedNode] = useState<FileNode | null>(null)
@@ -90,7 +91,7 @@ export function FileExplorer({ onClose, onOpenApp }: FileExplorerProps) {
 
   useEffect(() => {
     loadNodes(currentParentId)
-  }, [currentParentId, loadNodes])
+  }, [currentParentId, loadNodes, refreshTrigger])
 
 
   async function navigateToDirectory(node: FileNode) {

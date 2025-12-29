@@ -57,3 +57,11 @@ export interface CellState {
   value: number      // -1 = unknown, 0-8 = number, 9 = mine
   flagged: boolean   // Client-side only
 }
+
+// Mobile UI types
+export interface MobileApp {
+  id: string
+  name: string
+  icon: string           // emoji or image URL
+  iconBackground?: string // gradient or solid color
+}

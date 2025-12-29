@@ -1,16 +1,21 @@
 import { useState, useEffect } from 'react'
 import type { FileNode } from '../../types'
+import { updateFileContent, saveFile } from '../../api'
 
 interface NotepadProps {
   onClose: () => void
   file?: FileNode | null
-  onSave?: (content: string) => void
+  currentDirectory?: string
+  onFileSaved?: () => void
 }
 
-export function Notepad({ onClose, file, onSave }: NotepadProps) {
+export function Notepad({ onClose, file, currentDirectory = 'desktop', onFileSaved }: NotepadProps) {
   const [content, setContent] = useState(file?.content || '')
   const [isDirty, setIsDirty] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
+  const [showSaveDialog, setShowSaveDialog] = useState(false)
+  const [filename, setFilename] = useState('')
+  const [saveError, setSaveError] = useState<string | null>(null)
 
   useEffect(() => {
     setContent(file?.content || '')
@@ -23,11 +28,44 @@ export function Notepad({ onClose, file, onSave }: NotepadProps) {
   }
 
   async function handleSave() {
-    if (!onSave || !isDirty) return
+    if (!isDirty) return
+    
+    // For new files (no file prop), show save dialog
+    if (!file) {
+      setShowSaveDialog(true)
+      return
+    }
+    
+    // For existing files, update content directly
     setIsSaving(true)
+    setSaveError(null)
     try {
-      await onSave(content)
+      await updateFileContent(file.id, content)
       setIsDirty(false)
+      onFileSaved?.()
+    } catch {
+      setSaveError('Failed to save file')
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  async function handleSaveAs() {
+    if (!filename.trim()) return
+    
+    // Append .txt extension if not provided
+    const finalName = filename.endsWith('.txt') ? filename : `${filename}.txt`
+    
+    setIsSaving(true)
+    setSaveError(null)
+    try {
+      await saveFile(currentDirectory, finalName, content)
+      setIsDirty(false)
+      setShowSaveDialog(false)
+      setFilename('')
+      onFileSaved?.()
+    } catch {
+      setSaveError('Failed to save file')
     } finally {
       setIsSaving(false)
     }
@@ -74,6 +112,7 @@ export function Notepad({ onClose, file, onSave }: NotepadProps) {
           {isSaving ? 'Saving...' : 'Save'}
         </button>
         <span className="text-xs text-gray-500">Ctrl+S</span>
+        {saveError && <span className="text-xs text-red-400 ml-2">{saveError}</span>}
       </div>
 
       <textarea
@@ -89,6 +128,47 @@ export function Notepad({ onClose, file, onSave }: NotepadProps) {
         <span>{content.length} characters</span>
         <span>{content.split('\n').length} lines</span>
       </div>
+
+      {showSaveDialog && (
+        <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-gray-800 rounded-lg p-4 w-80 shadow-xl border border-gray-700">
+            <h3 className="text-white font-medium mb-3">Save As</h3>
+            <input
+              type="text"
+              value={filename}
+              onChange={(e) => setFilename(e.target.value)}
+              placeholder="Enter filename"
+              className="w-full px-3 py-2 bg-gray-900 border border-gray-600 rounded text-white text-sm mb-3 outline-none focus:border-blue-500"
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleSaveAs()
+                if (e.key === 'Escape') setShowSaveDialog(false)
+              }}
+            />
+            <p className="text-xs text-gray-400 mb-3">.txt extension will be added if not provided</p>
+            {saveError && <p className="text-xs text-red-400 mb-3">{saveError}</p>}
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => {
+                  setShowSaveDialog(false)
+                  setFilename('')
+                  setSaveError(null)
+                }}
+                className="px-3 py-1.5 text-sm text-gray-400 hover:text-white transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveAs}
+                disabled={!filename.trim() || isSaving}
+                className="px-3 py-1.5 text-sm bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {isSaving ? 'Saving...' : 'Save'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

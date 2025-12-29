@@ -13,6 +13,7 @@ import { CVViewer } from '../cv-viewer/CVViewer'
 import { Paint } from '../paint/Paint'
 import { JShellStudio } from '../jshell-studio/JShellStudio'
 import { Minesweeper } from '../minesweeper/Minesweeper'
+import { ImageViewer } from '../image-viewer/ImageViewer'
 import { useSettings } from '../../context/SettingsContext'
 import { fetchFileNodes, fetchBootConfig } from '../../api'
 import type { FileNode, BootConfig, OpenApp, RecentApp } from '../../types'
@@ -133,6 +134,7 @@ const APP_CONFIG: Record<string, { name: string; icon: string; width: number; he
   paint: { name: 'Paint', icon: '🎨', width: 900, height: 700 },
   jshellstudio: { name: 'JShell Studio', icon: '☕', width: 800, height: 600 },
   minesweeper: { name: 'Minesweeper', icon: '💣', width: 350, height: 450 },
+  imageviewer: { name: 'Image Viewer', icon: '🖼️', width: 600, height: 500 },
 }
 
 interface DesktopProps {
@@ -154,12 +156,44 @@ export function Desktop({ onRestart, onShutdown, recentApps, onAddRecentApp }: D
   const [openApps, setOpenApps] = useState<OpenApp[]>([])
   const [focusedApp, setFocusedApp] = useState<string | null>(null)
   const [selectionBox, setSelectionBox] = useState<SelectionBox | null>(null)
+  const [fileSystemRefreshTrigger, setFileSystemRefreshTrigger] = useState(0)
   const desktopRef = useRef<HTMLDivElement>(null)
 
   // Apply font size to root element when settings change
   useEffect(() => {
     document.documentElement.style.setProperty('--webos-font-size', `${settings.fontSize}px`)
   }, [settings.fontSize])
+
+  // Refresh desktop icons while preserving existing positions
+  const refreshDesktop = useCallback(async () => {
+    try {
+      const nodes = await fetchFileNodes('desktop')
+      setIcons(nodes)
+      
+      // Preserve existing positions, add defaults for new nodes
+      const savedPositions = loadIconPositions()
+      const containerHeight = window.innerHeight
+      setIconPositions(prev => {
+        const updated = { ...prev }
+        nodes.forEach((node, index) => {
+          if (!updated[node.id]) {
+            updated[node.id] = savedPositions[node.id] || getDefaultPosition(index, containerHeight)
+          }
+        })
+        // Remove positions for deleted nodes
+        const nodeIds = new Set(nodes.map(n => n.id))
+        Object.keys(updated).forEach(id => {
+          if (!nodeIds.has(id)) delete updated[id]
+        })
+        saveIconPositions(updated)
+        return updated
+      })
+    } catch (err) {
+      console.error('Failed to refresh desktop:', err)
+    }
+    // Increment trigger to refresh FileExplorer
+    setFileSystemRefreshTrigger(prev => prev + 1)
+  }, [])
 
   useEffect(() => {
     async function loadDesktop() {
@@ -373,6 +407,23 @@ export function Desktop({ onRestart, onShutdown, recentApps, onAddRecentApp }: D
       setFocusedApp(instanceId)
       return
     }
+
+    // For imageviewer, allow multiple instances with different files
+    if (appId === 'imageviewer' && file) {
+      const instanceId = `imageviewer-${file.id}`
+      if (openApps.some(app => app.id === instanceId)) {
+        setFocusedApp(instanceId)
+        return
+      }
+      setOpenApps(prev => [...prev, { 
+        id: instanceId, 
+        name: `${file.name} - Image Viewer`,
+        icon: config.icon,
+        file 
+      }])
+      setFocusedApp(instanceId)
+      return
+    }
     
     if (openApps.some(app => app.id === appId)) {
       setFocusedApp(appId)
@@ -394,8 +445,14 @@ export function Desktop({ onRestart, onShutdown, recentApps, onAddRecentApp }: D
     } else if (node.type === 'DIRECTORY') {
       openApp('fileexplorer')
     } else if (node.type === 'FILE') {
-      // Open text files in Notepad
-      openApp('notepad', node)
+      // Open image files in ImageViewer, others in Notepad
+      if (node.name.toLowerCase().endsWith('.png') || 
+          node.name.toLowerCase().endsWith('.jpg') || 
+          node.name.toLowerCase().endsWith('.jpeg')) {
+        openApp('imageviewer', node)
+      } else {
+        openApp('notepad', node)
+      }
     }
   }
 
@@ -510,7 +567,7 @@ export function Desktop({ onRestart, onShutdown, recentApps, onAddRecentApp }: D
           zIndex={getZIndex('terminal')}
           onFocus={() => setFocusedApp('terminal')}
         >
-          <Terminal onClose={() => closeApp('terminal')} />
+          <Terminal onClose={() => closeApp('terminal')} onFileSystemChange={refreshDesktop} />
         </DraggableWindow>
       )}
 
@@ -536,7 +593,7 @@ export function Desktop({ onRestart, onShutdown, recentApps, onAddRecentApp }: D
           zIndex={getZIndex('fileexplorer')}
           onFocus={() => setFocusedApp('fileexplorer')}
         >
-          <FileExplorer onClose={() => closeApp('fileexplorer')} onOpenApp={openApp} />
+          <FileExplorer onClose={() => closeApp('fileexplorer')} onOpenApp={openApp} refreshTrigger={fileSystemRefreshTrigger} />
         </DraggableWindow>
       )}
 
@@ -569,6 +626,28 @@ export function Desktop({ onRestart, onShutdown, recentApps, onAddRecentApp }: D
             <Notepad 
               onClose={() => closeApp(app.id)} 
               file={app.file}
+              onFileSaved={refreshDesktop}
+            />
+          </DraggableWindow>
+        ))
+      }
+
+      {/* Render all imageviewer instances */}
+      {openApps
+        .filter(app => app.id.startsWith('imageviewer'))
+        .map((app, index) => (
+          <DraggableWindow
+            key={app.id}
+            initialX={160 + index * 30}
+            initialY={80 + index * 30}
+            width={APP_CONFIG.imageviewer.width}
+            height={APP_CONFIG.imageviewer.height}
+            zIndex={getZIndex(app.id)}
+            onFocus={() => setFocusedApp(app.id)}
+          >
+            <ImageViewer 
+              onClose={() => closeApp(app.id)} 
+              file={app.file!}
             />
           </DraggableWindow>
         ))
@@ -596,7 +675,7 @@ export function Desktop({ onRestart, onShutdown, recentApps, onAddRecentApp }: D
           zIndex={getZIndex('paint')}
           onFocus={() => setFocusedApp('paint')}
         >
-          <Paint onClose={() => closeApp('paint')} />
+          <Paint onClose={() => closeApp('paint')} onFileSaved={refreshDesktop} />
         </DraggableWindow>
       )}
 

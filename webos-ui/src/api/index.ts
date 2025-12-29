@@ -117,3 +117,24 @@ export async function clickMinesweeperCell(sessionId: string, row: number, col: 
   if (!response.ok) throw new Error('Failed to process Minesweeper click')
   return response.json()
 }
+
+// File content operations
+export async function updateFileContent(id: string, content: string): Promise<FileNode> {
+  const response = await fetch(`${API_BASE}/file-nodes/${id}/content`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ content })
+  })
+  if (!response.ok) throw new Error('Failed to update file content')
+  return response.json()
+}
+
+export async function saveFile(parentId: string, name: string, content: string): Promise<FileNode> {
+  const response = await fetch(`${API_BASE}/file-nodes/save`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ parentId, name, content })
+  })
+  if (!response.ok) throw new Error('Failed to save file')
+  return response.json()
+}

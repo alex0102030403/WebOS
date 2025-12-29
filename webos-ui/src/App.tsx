@@ -1,12 +1,15 @@
 import { useState } from 'react'
 import { BiosSequence } from './components/bios/BiosSequence'
 import { Desktop } from './components/desktop/Desktop'
+import { MobilePhone } from './components/mobile/MobilePhone'
 import { SettingsProvider } from './context/SettingsContext'
+import { useDeviceType } from './hooks/useDeviceType'
 import type { RecentApp } from './types'
 
 function App() {
   const [isBooted, setIsBooted] = useState(false)
   const [recentApps, setRecentApps] = useState<RecentApp[]>([])
+  const deviceType = useDeviceType()
 
   function handleRestart() {
     setRecentApps([])
@@ -30,15 +33,21 @@ function App() {
     return <BiosSequence onComplete={() => setIsBooted(true)} />
   }
 
+  const sharedProps = {
+    onRestart: handleRestart,
+    onShutdown: handleShutdown,
+    recentApps,
+    onAddRecentApp: addRecentApp
+  }
+
   return (
     <SettingsProvider>
       <div className="w-screen h-screen">
-        <Desktop 
-          onRestart={handleRestart}
-          onShutdown={handleShutdown}
-          recentApps={recentApps}
-          onAddRecentApp={addRecentApp}
-        />
+        {deviceType === 'mobile' ? (
+          <MobilePhone {...sharedProps} />
+        ) : (
+          <Desktop {...sharedProps} />
+        )}
       </div>
     </SettingsProvider>
   )

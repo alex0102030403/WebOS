@@ -144,4 +144,52 @@ public class FileSystemService {
         
         return "/" + String.join("/", pathParts);
     }
+
+    /**
+     * Finds the index of a FileNode in the MFT by its id.
+     * Returns -1 if not found.
+     */
+    int findIndexById(String id) {
+        for (int i = 0; i < this.mft.size(); i++) {
+            if (this.mft.get(i).id().equals(id)) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    /**
+     * Updates the content of an existing FileNode.
+     * Returns the updated node or empty if not found.
+     */
+    public Optional<FileNode> updateContent(String id, String content) {
+        var index = findIndexById(id);
+        if (index < 0) {
+            return Optional.empty();
+        }
+        
+        var existing = this.mft.get(index);
+        var updated = new FileNode(
+            existing.id(),
+            existing.parentId(),
+            existing.name(),
+            existing.type(),
+            content
+        );
+        this.mft.set(index, updated);
+        return Optional.of(updated);
+    }
+
+    /**
+     * Creates a file with content, or updates if name exists in parent.
+     * Returns the created/updated node.
+     */
+    public FileNode saveFile(String parentId, String name, String content) {
+        var effectiveParentId = parentId == null ? DEFAULT_PARENT_ID : parentId;
+        var existing = findByNameInParent(effectiveParentId, name);
+        if (existing.isPresent()) {
+            return updateContent(existing.get().id(), content).orElseThrow();
+        }
+        return createNode(effectiveParentId, name, FileType.FILE, content);
+    }
 }

@@ -11,6 +11,7 @@ import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
+import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
@@ -90,6 +91,46 @@ public class FileNodesResource {
         var type = FileType.valueOf(typeStr);
         var node = this.fileSystemService.createNode(parentId, name, type, content);
         
+        return Response.status(Response.Status.CREATED)
+            .entity(node.toJSON())
+            .build();
+    }
+
+    /**
+     * Updates the content of an existing file node.
+     */
+    @PUT
+    @Path("/{id}/content")
+    public Response updateContent(@PathParam("id") String id, JsonObject body) {
+        var content = body.getString("content", "");
+        return this.fileSystemService.updateContent(id, content)
+            .map(node -> Response.ok(node.toJSON()).build())
+            .orElse(Response.status(Response.Status.NOT_FOUND)
+                .entity(Json.createObjectBuilder()
+                    .add("error", "File not found: " + id)
+                    .build())
+                .build());
+    }
+
+    /**
+     * Saves a file with content, creating or updating as needed.
+     */
+    @POST
+    @Path("/save")
+    public Response saveFile(JsonObject body) {
+        var parentId = body.getString("parentId", "desktop");
+        var name = body.getString("name", null);
+        var content = body.getString("content", "");
+
+        if (name == null || name.isBlank()) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                .entity(Json.createObjectBuilder()
+                    .add("error", "Name is required")
+                    .build())
+                .build();
+        }
+
+        var node = this.fileSystemService.saveFile(parentId, name, content);
         return Response.status(Response.Status.CREATED)
             .entity(node.toJSON())
             .build();
