@@ -16,7 +16,7 @@ const TOP_APPS = [
   { id: 'settings', name: 'Settings', icon: '⚙️' },
   { id: 'file-explorer', name: 'File Explorer', icon: '📁' },
   { id: 'chrome', name: 'Google Chrome', icon: '🌐' },
-  { id: 'game-bar', name: 'Game Bar', icon: '🎮' },
+  { id: 'paint', name: 'Paint', icon: '🎨' },
 ]
 
 const QUICK_SEARCHES = [

@@ -10,6 +10,7 @@ import { FileExplorer } from '../file-explorer/FileExplorer'
 import { ChromeBrowser } from '../chrome/ChromeBrowser'
 import { Notepad } from '../notepad/Notepad'
 import { CVViewer } from '../cv-viewer/CVViewer'
+import { Paint } from '../paint/Paint'
 import { useSettings } from '../../context/SettingsContext'
 import { fetchFileNodes, fetchBootConfig } from '../../api'
 import type { FileNode, BootConfig, OpenApp, RecentApp } from '../../types'
@@ -24,6 +25,7 @@ const APP_CONFIG: Record<string, { name: string; icon: string; width: number; he
   chrome: { name: 'Chrome', icon: '🌐', width: 900, height: 600 },
   notepad: { name: 'Notepad', icon: '📝', width: 600, height: 450 },
   cvviewer: { name: 'CV Viewer', icon: '📄', width: 650, height: 700 },
+  paint: { name: 'Paint', icon: '🎨', width: 900, height: 700 },
 }
 
 interface DesktopProps {
@@ -289,6 +291,19 @@ export function Desktop({ onRestart, onShutdown, recentApps, onAddRecentApp }: D
         </DraggableWindow>
       )}
 
+      {isAppOpen('paint') && (
+        <DraggableWindow
+          initialX={60}
+          initialY={40}
+          width={APP_CONFIG.paint.width}
+          height={APP_CONFIG.paint.height}
+          zIndex={getZIndex('paint')}
+          onFocus={() => setFocusedApp('paint')}
+        >
+          <Paint onClose={() => closeApp('paint')} />
+        </DraggableWindow>
+      )}
+
       <Taskbar 
         onStartClick={() => setIsStartMenuOpen(!isStartMenuOpen)}
         isStartMenuOpen={isStartMenuOpen}
@@ -296,6 +311,7 @@ export function Desktop({ onRestart, onShutdown, recentApps, onAddRecentApp }: D
         onReorderApps={setOpenApps}
         onAppClick={handleAppClick}
         onOpenApp={openApp}
+        onCloseApp={closeApp}
         onRestart={onRestart}
         onShutdown={onShutdown}
         recentApps={recentApps}
@@ -322,4 +338,5 @@ const DEMO_ICONS: FileNode[] = [
   { id: 'settings', parentId: 'desktop', name: 'Settings', type: 'SHORTCUT', content: 'app:settings' },
   { id: 'file-explorer', parentId: 'desktop', name: 'File Explorer', type: 'SHORTCUT', content: 'app:fileexplorer' },
   { id: 'chrome', parentId: 'desktop', name: 'Chrome', type: 'SHORTCUT', content: 'app:chrome' },
+  { id: 'paint', parentId: 'desktop', name: 'Paint', type: 'SHORTCUT', content: 'app:paint' },
 ]
