@@ -1,4 +1,4 @@
-import type { FileNode, BootConfig, CommandResult } from '../types'
+import type { FileNode, BootConfig, CommandResult, GameResponse } from '../types'
 
 // In production, use the full backend URL; in dev, use relative path
 const API_BASE = import.meta.env.PROD 
@@ -94,5 +94,26 @@ export async function executeCode(code: string): Promise<ExecutionResponse> {
     body: JSON.stringify({ code })
   })
   if (!response.ok) throw new Error('Failed to execute code')
+  return response.json()
+}
+
+// Minesweeper API functions
+export async function newMinesweeperGame(sessionId: string): Promise<GameResponse> {
+  const response = await fetch(`${API_BASE}/games/minesweeper/new`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ sessionId })
+  })
+  if (!response.ok) throw new Error('Failed to create new Minesweeper game')
+  return response.json()
+}
+
+export async function clickMinesweeperCell(sessionId: string, row: number, col: number): Promise<GameResponse> {
+  const response = await fetch(`${API_BASE}/games/minesweeper/click`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ sessionId, row, col })
+  })
+  if (!response.ok) throw new Error('Failed to process Minesweeper click')
   return response.json()
 }

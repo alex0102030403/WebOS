@@ -37,6 +37,7 @@ public class FileSystemService {
         new FileNode("chrome", "desktop", "Chrome", FileType.SHORTCUT, "app:chrome"),
         new FileNode("paint", "desktop", "Paint", FileType.SHORTCUT, "app:paint"),
         new FileNode("jshell-studio", "desktop", "JShell Studio", FileType.SHORTCUT, "app:jshellstudio"),
+        new FileNode("minesweeper", "desktop", "Minesweeper", FileType.SHORTCUT, "app:minesweeper"),
         new FileNode("linkedin", "desktop", "LinkedIn", FileType.SHORTCUT, "https://linkedin.com/in/webos-portfolio"),
         new FileNode("project-webos", "projects", "WebOS Portfolio", FileType.FILE, 
             "A browser-based Windows 11 simulation powered by Java 25 backend."),

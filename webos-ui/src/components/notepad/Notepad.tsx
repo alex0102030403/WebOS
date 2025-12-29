@@ -80,12 +80,12 @@ export function Notepad({ onClose, file, onSave }: NotepadProps) {
         value={content}
         onChange={(e) => handleChange(e.target.value)}
         onKeyDown={handleKeyDown}
-        className="flex-1 w-full p-4 bg-gray-950 text-gray-100 font-mono text-sm resize-none outline-none"
+        className="flex-1 w-full p-5 bg-gray-950 text-gray-100 font-mono text-sm resize-none outline-none"
         placeholder="Start typing..."
         spellCheck={false}
       />
 
-      <div className="px-4 py-1.5 bg-gray-800 border-t border-gray-700 text-xs text-gray-400 flex justify-between">
+      <div className="px-5 py-2 bg-gray-800 border-t border-gray-700 text-xs text-gray-400 flex justify-between">
         <span>{content.length} characters</span>
         <span>{content.split('\n').length} lines</span>
       </div>

@@ -104,11 +104,11 @@ export function TaskManager({ onClose, openApps, onCloseApp }: TaskManagerProps)
         <table className="w-full text-sm">
           <thead className="bg-gray-800 sticky top-0">
             <tr>
-              <th className="text-left px-4 py-2 font-medium">Name</th>
-              <th className="text-left px-4 py-2 font-medium">PID</th>
-              <th className="text-right px-4 py-2 font-medium">Memory</th>
-              <th className="text-left px-4 py-2 font-medium">Status</th>
-              <th className="text-center px-4 py-2 font-medium">Action</th>
+              <th className="text-left px-5 py-3 font-medium">Name</th>
+              <th className="text-left px-5 py-3 font-medium">PID</th>
+              <th className="text-right px-5 py-3 font-medium">Memory</th>
+              <th className="text-left px-5 py-3 font-medium">Status</th>
+              <th className="text-center px-5 py-3 font-medium">Action</th>
             </tr>
           </thead>
           <tbody>
@@ -117,20 +117,20 @@ export function TaskManager({ onClose, openApps, onCloseApp }: TaskManagerProps)
                 key={process.pid} 
                 className="border-b border-gray-800 hover:bg-gray-800/50"
               >
-                <td className="px-4 py-2">
+                <td className="px-5 py-3">
                   <span className="mr-2">{process.icon}</span>
                   {process.name}
                 </td>
-                <td className="px-4 py-2 text-gray-400">{process.pid}</td>
-                <td className="px-4 py-2 text-right text-blue-400">
+                <td className="px-5 py-3 text-gray-400">{process.pid}</td>
+                <td className="px-5 py-3 text-right text-blue-400">
                   {formatMemory(process.memoryBytes)}
                 </td>
-                <td className="px-4 py-2">
+                <td className="px-5 py-3">
                   <span className="px-2 py-0.5 rounded text-xs bg-green-500/20 text-green-400">
                     {process.status}
                   </span>
                 </td>
-                <td className="px-4 py-2 text-center">
+                <td className="px-5 py-3 text-center">
                   {process.pid !== '1' && (
                     <button
                       onClick={() => handleEndTask(process)}
@@ -152,7 +152,7 @@ export function TaskManager({ onClose, openApps, onCloseApp }: TaskManagerProps)
         )}
       </div>
 
-      <div className="px-4 py-2 bg-gray-800 border-t border-gray-700 text-xs text-gray-400 flex justify-between">
+      <div className="px-5 py-3 bg-gray-800 border-t border-gray-700 text-xs text-gray-400 flex justify-between">
         <span>{processes.length} processes</span>
         <span>Total: {formatMemory(totalMemory)}</span>
       </div>

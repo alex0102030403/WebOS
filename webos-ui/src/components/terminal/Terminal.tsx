@@ -215,9 +215,9 @@ export function Terminal({ onClose }: TerminalProps) {
 
       <div 
         ref={outputRef}
-        className="flex-1 overflow-auto p-4 space-y-2"
+        className="flex-1 overflow-auto p-5 space-y-3"
       >
-        <div className="text-gray-500">
+        <div className="text-gray-500 mb-2">
           WebOS Terminal v1.0.0 - Type 'help' for available commands
         </div>
 

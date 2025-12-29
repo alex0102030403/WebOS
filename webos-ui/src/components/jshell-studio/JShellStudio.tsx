@@ -97,7 +97,7 @@ export function JShellStudio({ onClose }: JShellStudioProps) {
             onKeyDown={handleKeyDown}
             disabled={isExecuting}
             placeholder="Enter Java code here..."
-            className="w-full h-full p-4 bg-gray-900 text-green-400 resize-none outline-none font-mono text-sm"
+            className="w-full h-full p-5 bg-gray-900 text-green-400 resize-none outline-none font-mono text-sm"
             spellCheck={false}
           />
         </div>
@@ -106,7 +106,7 @@ export function JShellStudio({ onClose }: JShellStudioProps) {
           <div className="px-4 py-1 bg-gray-800 text-gray-400 text-xs border-b border-gray-700">
             Output
           </div>
-          <div className="flex-1 overflow-auto p-4 bg-black">
+          <div className="flex-1 overflow-auto p-5 bg-black">
             {isExecuting && (
               <div className="flex items-center gap-2 text-yellow-400">
                 <span className="animate-pulse">●</span>

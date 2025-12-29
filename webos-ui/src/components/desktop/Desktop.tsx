@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { DesktopIcon } from './DesktopIcon'
 import { Taskbar } from './Taskbar'
 import { StartMenu } from './StartMenu'
@@ -12,22 +12,127 @@ import { Notepad } from '../notepad/Notepad'
 import { CVViewer } from '../cv-viewer/CVViewer'
 import { Paint } from '../paint/Paint'
 import { JShellStudio } from '../jshell-studio/JShellStudio'
+import { Minesweeper } from '../minesweeper/Minesweeper'
 import { useSettings } from '../../context/SettingsContext'
 import { fetchFileNodes, fetchBootConfig } from '../../api'
 import type { FileNode, BootConfig, OpenApp, RecentApp } from '../../types'
 
 const DEFAULT_WALLPAPER = 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=1920&q=80'
+const GRID_SIZE = 90
+const ICON_POSITIONS_KEY = 'desktop-icon-positions'
+const ICON_SIZE = 80
+
+interface IconPosition {
+  x: number
+  y: number
+}
+
+interface SelectionBox {
+  startX: number
+  startY: number
+  currentX: number
+  currentY: number
+}
+
+function loadIconPositions(): Record<string, IconPosition> {
+  try {
+    const saved = localStorage.getItem(ICON_POSITIONS_KEY)
+    return saved ? JSON.parse(saved) : {}
+  } catch {
+    return {}
+  }
+}
+
+function saveIconPositions(positions: Record<string, IconPosition>) {
+  localStorage.setItem(ICON_POSITIONS_KEY, JSON.stringify(positions))
+}
+
+function getDefaultPosition(index: number, containerHeight: number): IconPosition {
+  const iconsPerColumn = Math.floor((containerHeight - 60) / GRID_SIZE) || 8
+  const col = Math.floor(index / iconsPerColumn)
+  const row = index % iconsPerColumn
+  return { x: col * GRID_SIZE, y: row * GRID_SIZE }
+}
+
+function getSelectionRect(box: SelectionBox) {
+  return {
+    left: Math.min(box.startX, box.currentX),
+    top: Math.min(box.startY, box.currentY),
+    width: Math.abs(box.currentX - box.startX),
+    height: Math.abs(box.currentY - box.startY),
+  }
+}
+
+function isIconInSelection(iconPos: IconPosition, selectionRect: { left: number; top: number; width: number; height: number }): boolean {
+  const iconRight = iconPos.x + ICON_SIZE
+  const iconBottom = iconPos.y + ICON_SIZE
+  const selRight = selectionRect.left + selectionRect.width
+  const selBottom = selectionRect.top + selectionRect.height
+
+  return !(iconRight < selectionRect.left || 
+           iconPos.x > selRight || 
+           iconBottom < selectionRect.top || 
+           iconPos.y > selBottom)
+}
+
+function positionKey(x: number, y: number): string {
+  return `${x},${y}`
+}
+
+function findNearestEmptyCell(
+  targetX: number, 
+  targetY: number, 
+  _occupiedPositions: Set<string>,
+  excludeIds: Set<string>,
+  allPositions: Record<string, IconPosition>
+): IconPosition {
+  // Build set of occupied cells excluding the icons being moved
+  const occupied = new Set<string>()
+  for (const [id, pos] of Object.entries(allPositions)) {
+    if (!excludeIds.has(id)) {
+      occupied.add(positionKey(pos.x, pos.y))
+    }
+  }
+
+  // If target is empty, use it
+  const targetKey = positionKey(targetX, targetY)
+  if (!occupied.has(targetKey)) {
+    return { x: targetX, y: targetY }
+  }
+
+  // Search in expanding rings for nearest empty cell
+  for (let radius = 1; radius < 20; radius++) {
+    for (let dx = -radius; dx <= radius; dx++) {
+      for (let dy = -radius; dy <= radius; dy++) {
+        if (Math.abs(dx) !== radius && Math.abs(dy) !== radius) continue
+        
+        const checkX = targetX + dx * GRID_SIZE
+        const checkY = targetY + dy * GRID_SIZE
+        
+        if (checkX < 0 || checkY < 0) continue
+        
+        const key = positionKey(checkX, checkY)
+        if (!occupied.has(key)) {
+          return { x: checkX, y: checkY }
+        }
+      }
+    }
+  }
+
+  return { x: targetX, y: targetY }
+}
 
 const APP_CONFIG: Record<string, { name: string; icon: string; width: number; height: number }> = {
   terminal: { name: 'Terminal', icon: '💻', width: 700, height: 450 },
   taskmanager: { name: 'Task Manager', icon: '📊', width: 600, height: 400 },
-  settings: { name: 'Settings', icon: '⚙️', width: 500, height: 550 },
+  settings: { name: 'Settings', icon: '⚙️', width: 750, height: 750 },
   fileexplorer: { name: 'File Explorer', icon: '📂', width: 700, height: 500 },
   chrome: { name: 'Chrome', icon: '🌐', width: 900, height: 600 },
   notepad: { name: 'Notepad', icon: '📝', width: 600, height: 450 },
   cvviewer: { name: 'CV Viewer', icon: '📄', width: 650, height: 700 },
   paint: { name: 'Paint', icon: '🎨', width: 900, height: 700 },
   jshellstudio: { name: 'JShell Studio', icon: '☕', width: 800, height: 600 },
+  minesweeper: { name: 'Minesweeper', icon: '💣', width: 350, height: 450 },
 }
 
 interface DesktopProps {
@@ -40,13 +145,16 @@ interface DesktopProps {
 export function Desktop({ onRestart, onShutdown, recentApps, onAddRecentApp }: DesktopProps) {
   const { settings } = useSettings()
   const [icons, setIcons] = useState<FileNode[]>([])
+  const [iconPositions, setIconPositions] = useState<Record<string, IconPosition>>({})
   const [bootConfig, setBootConfig] = useState<BootConfig | null>(null)
-  const [selectedIcon, setSelectedIcon] = useState<FileNode | null>(null)
+  const [selectedIcons, setSelectedIcons] = useState<Set<string>>(new Set())
   const [isStartMenuOpen, setIsStartMenuOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [openApps, setOpenApps] = useState<OpenApp[]>([])
   const [focusedApp, setFocusedApp] = useState<string | null>(null)
+  const [selectionBox, setSelectionBox] = useState<SelectionBox | null>(null)
+  const desktopRef = useRef<HTMLDivElement>(null)
 
   // Apply font size to root element when settings change
   useEffect(() => {
@@ -63,17 +171,185 @@ export function Desktop({ onRestart, onShutdown, recentApps, onAddRecentApp }: D
         ])
         setIcons(nodes)
         setBootConfig(config)
+        
+        // Initialize positions from localStorage or defaults
+        const savedPositions = loadIconPositions()
+        const containerHeight = window.innerHeight
+        const positions: Record<string, IconPosition> = {}
+        nodes.forEach((node, index) => {
+          positions[node.id] = savedPositions[node.id] || getDefaultPosition(index, containerHeight)
+        })
+        setIconPositions(positions)
       } catch (err) {
         console.error('Failed to load desktop:', err)
         setError('Failed to connect to backend. Using demo mode.')
         setIcons(DEMO_ICONS)
         setBootConfig(DEMO_CONFIG)
+        
+        const savedPositions = loadIconPositions()
+        const containerHeight = window.innerHeight
+        const positions: Record<string, IconPosition> = {}
+        DEMO_ICONS.forEach((node, index) => {
+          positions[node.id] = savedPositions[node.id] || getDefaultPosition(index, containerHeight)
+        })
+        setIconPositions(positions)
       } finally {
         setIsLoading(false)
       }
     }
     loadDesktop()
   }, [])
+
+  const handleIconPositionChange = useCallback((nodeId: string, position: IconPosition) => {
+    setIconPositions(prev => {
+      const updated = { ...prev, [nodeId]: position }
+      saveIconPositions(updated)
+      return updated
+    })
+  }, [])
+
+  const handleIconSelect = useCallback((node: FileNode, addToSelection: boolean) => {
+    if (addToSelection) {
+      setSelectedIcons(prev => {
+        const newSet = new Set(prev)
+        if (newSet.has(node.id)) {
+          newSet.delete(node.id)
+        } else {
+          newSet.add(node.id)
+        }
+        return newSet
+      })
+    } else {
+      setSelectedIcons(new Set([node.id]))
+    }
+  }, [])
+
+  // Store initial positions when multi-drag starts
+  const dragStartPositions = useRef<Record<string, IconPosition>>({})
+
+  const handleMultiDrag = useCallback((deltaX: number, deltaY: number) => {
+    // On first drag, capture starting positions
+    if (Object.keys(dragStartPositions.current).length === 0) {
+      selectedIcons.forEach(id => {
+        dragStartPositions.current[id] = iconPositions[id] || { x: 0, y: 0 }
+      })
+    }
+
+    setIconPositions(prev => {
+      const updated = { ...prev }
+      selectedIcons.forEach(id => {
+        const startPos = dragStartPositions.current[id]
+        if (startPos) {
+          updated[id] = {
+            x: Math.max(0, startPos.x + deltaX),
+            y: Math.max(0, startPos.y + deltaY)
+          }
+        }
+      })
+      saveIconPositions(updated)
+      return updated
+    })
+  }, [selectedIcons, iconPositions])
+
+  // Finalize positions with collision detection
+  const handleDragEnd = useCallback(() => {
+    setIconPositions(prev => {
+      const updated = { ...prev }
+      const movingIds = selectedIcons.size > 0 ? selectedIcons : new Set<string>()
+      
+      // Process each moving icon
+      movingIds.forEach(id => {
+        const currentPos = updated[id]
+        if (currentPos) {
+          const finalPos = findNearestEmptyCell(
+            currentPos.x,
+            currentPos.y,
+            new Set(),
+            movingIds,
+            updated
+          )
+          updated[id] = finalPos
+        }
+      })
+      
+      saveIconPositions(updated)
+      return updated
+    })
+    dragStartPositions.current = {}
+  }, [selectedIcons])
+
+  // Reset drag start positions when mouse is released
+  useEffect(() => {
+    function handleMouseUp() {
+      dragStartPositions.current = {}
+    }
+    document.addEventListener('mouseup', handleMouseUp)
+    return () => document.removeEventListener('mouseup', handleMouseUp)
+  }, [])
+
+  const didMarqueeSelect = useRef(false)
+
+  function handleDesktopMouseDown(e: React.MouseEvent) {
+    if (e.button !== 0) return
+    if ((e.target as HTMLElement).closest('[data-icon]')) return
+    
+    const rect = desktopRef.current?.getBoundingClientRect()
+    if (!rect) return
+
+    const startX = e.clientX - rect.left
+    const startY = e.clientY - rect.top
+
+    setSelectionBox({ startX, startY, currentX: startX, currentY: startY })
+    didMarqueeSelect.current = false
+
+    const rectCopy = rect
+
+    function handleMouseMove(moveEvent: MouseEvent) {
+      const currentX = moveEvent.clientX - rectCopy.left
+      const currentY = moveEvent.clientY - rectCopy.top
+      setSelectionBox(prev => prev ? { ...prev, currentX, currentY } : null)
+
+      // Update selected icons based on selection box
+      const box = { startX, startY, currentX, currentY }
+      const selRect = getSelectionRect(box)
+      
+      // Only start selecting if we've moved enough
+      if (selRect.width > 5 || selRect.height > 5) {
+        didMarqueeSelect.current = true
+        const newSelected = new Set<string>()
+        
+        icons.forEach(icon => {
+          const pos = iconPositions[icon.id]
+          if (pos && isIconInSelection(pos, selRect)) {
+            newSelected.add(icon.id)
+          }
+        })
+        setSelectedIcons(newSelected)
+      }
+    }
+
+    function handleMouseUp() {
+      setSelectionBox(null)
+      document.removeEventListener('mousemove', handleMouseMove)
+      document.removeEventListener('mouseup', handleMouseUp)
+    }
+
+    document.addEventListener('mousemove', handleMouseMove)
+    document.addEventListener('mouseup', handleMouseUp)
+  }
+
+  function handleDesktopClick(e: React.MouseEvent) {
+    // Don't clear selection if we just did a marquee select
+    if (didMarqueeSelect.current) {
+      didMarqueeSelect.current = false
+      return
+    }
+    // Don't clear if clicking on an icon
+    if ((e.target as HTMLElement).closest('[data-icon]')) return
+    
+    setSelectedIcons(new Set())
+    setIsStartMenuOpen(false)
+  }
 
   function openApp(appId: string, file?: FileNode) {
     const config = APP_CONFIG[appId]
@@ -135,11 +411,6 @@ export function Desktop({ onRestart, onShutdown, recentApps, onAddRecentApp }: D
     return focusedApp === appId ? 20 : 10
   }
 
-  function handleDesktopClick() {
-    setSelectedIcon(null)
-    setIsStartMenuOpen(false)
-  }
-
   // Use settings wallpaper, fallback to bootConfig, then default
   const wallpaperUrl = settings.wallpaperUrl || bootConfig?.wallpaperUrl || DEFAULT_WALLPAPER
   const username = bootConfig?.username || 'Visitor'
@@ -158,23 +429,46 @@ export function Desktop({ onRestart, onShutdown, recentApps, onAddRecentApp }: D
     >
       <div className="absolute inset-0 bg-black/10" />
 
-      <div className="relative p-4 pb-16 h-full overflow-auto">
+      <div 
+        ref={desktopRef}
+        className="relative p-4 pb-16 h-full overflow-hidden"
+        onMouseDown={handleDesktopMouseDown}
+      >
         {isLoading ? (
           <div className="flex items-center justify-center h-full">
             <div className="text-white text-lg">Loading...</div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-2 content-start">
+          <div className="relative w-full h-full">
             {icons.map((node) => (
               <DesktopIcon
                 key={node.id}
                 node={node}
                 onClick={handleIconClick}
-                isSelected={selectedIcon?.id === node.id}
-                onSelect={setSelectedIcon}
+                isSelected={selectedIcons.has(node.id)}
+                onSelect={handleIconSelect}
+                position={iconPositions[node.id] || { x: 0, y: 0 }}
+                onPositionChange={handleIconPositionChange}
+                onMultiDrag={handleMultiDrag}
+                onDragEnd={handleDragEnd}
+                gridSize={GRID_SIZE}
+                selectedCount={selectedIcons.size}
               />
             ))}
           </div>
+        )}
+
+        {/* Selection box */}
+        {selectionBox && (
+          <div
+            className="absolute border border-blue-400 bg-blue-400/20 pointer-events-none"
+            style={{
+              left: Math.min(selectionBox.startX, selectionBox.currentX),
+              top: Math.min(selectionBox.startY, selectionBox.currentY),
+              width: Math.abs(selectionBox.currentX - selectionBox.startX),
+              height: Math.abs(selectionBox.currentY - selectionBox.startY),
+            }}
+          />
         )}
       </div>
 
@@ -319,6 +613,19 @@ export function Desktop({ onRestart, onShutdown, recentApps, onAddRecentApp }: D
         </DraggableWindow>
       )}
 
+      {isAppOpen('minesweeper') && (
+        <DraggableWindow
+          initialX={200}
+          initialY={80}
+          width={APP_CONFIG.minesweeper.width}
+          height={APP_CONFIG.minesweeper.height}
+          zIndex={getZIndex('minesweeper')}
+          onFocus={() => setFocusedApp('minesweeper')}
+        >
+          <Minesweeper onClose={() => closeApp('minesweeper')} />
+        </DraggableWindow>
+      )}
+
       <Taskbar 
         onStartClick={() => setIsStartMenuOpen(!isStartMenuOpen)}
         isStartMenuOpen={isStartMenuOpen}
@@ -355,4 +662,5 @@ const DEMO_ICONS: FileNode[] = [
   { id: 'chrome', parentId: 'desktop', name: 'Chrome', type: 'SHORTCUT', content: 'app:chrome' },
   { id: 'paint', parentId: 'desktop', name: 'Paint', type: 'SHORTCUT', content: 'app:paint' },
   { id: 'jshell-studio', parentId: 'desktop', name: 'JShell Studio', type: 'SHORTCUT', content: 'app:jshellstudio' },
+  { id: 'minesweeper', parentId: 'desktop', name: 'Minesweeper', type: 'SHORTCUT', content: 'app:minesweeper' },
 ]

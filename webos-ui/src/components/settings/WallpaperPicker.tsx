@@ -51,10 +51,10 @@ export function WallpaperPicker({ currentUrl, onSelect }: WallpaperPickerProps) 
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <label className="text-sm font-medium text-gray-300">Wallpaper</label>
       
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-2 gap-5">
         {PRESET_WALLPAPERS.map((url, index) => (
           <button
             key={index}
@@ -75,20 +75,20 @@ export function WallpaperPicker({ currentUrl, onSelect }: WallpaperPickerProps) 
         ))}
       </div>
 
-      <div className="space-y-2">
+      <div className="space-y-3 pt-2">
         <label className="text-xs text-gray-400">Custom URL</label>
-        <div className="flex gap-2">
+        <div className="flex gap-3">
           <input
             type="text"
             value={customUrl}
             onChange={(e) => setCustomUrl(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="https://example.com/image.jpg"
-            className="flex-1 px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+            className="flex-1 px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-lg text-sm text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
           />
           <button
             onClick={handleCustomUrlSubmit}
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors"
+            className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors"
           >
             Apply
           </button>
@@ -96,7 +96,7 @@ export function WallpaperPicker({ currentUrl, onSelect }: WallpaperPickerProps) 
         {urlError && <p className="text-xs text-red-400">{urlError}</p>}
       </div>
 
-      <div className="space-y-2">
+      <div className="space-y-3">
         <label className="text-xs text-gray-400">Preview</label>
         <div className="relative aspect-video rounded-lg overflow-hidden border border-gray-700 bg-gray-800">
           {imageError ? (

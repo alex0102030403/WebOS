@@ -39,3 +39,21 @@ export interface RecentApp {
   icon: string
   timestamp: number
 }
+
+// Minesweeper types
+export interface CellUpdate {
+  r: number
+  c: number
+  val: number
+}
+
+export interface GameResponse {
+  status: 'PLAYING' | 'LOST' | 'WON'
+  updates: CellUpdate[]
+}
+
+export interface CellState {
+  revealed: boolean
+  value: number      // -1 = unknown, 0-8 = number, 9 = mine
+  flagged: boolean   // Client-side only
+}

@@ -12,10 +12,58 @@ interface BreadcrumbItem {
   name: string
 }
 
-const ICON_MAP: Record<FileNode['type'], string> = {
-  DIRECTORY: '📁',
-  FILE: '📄',
-  SHORTCUT: '🔗'
+function getIconPath(node: FileNode): string {
+  const baseName = node.name.replace(/\.[^/.]+$/, '')
+  return `/icons/${baseName}.png`
+}
+
+function getFallbackEmoji(node: FileNode): string {
+  if (node.type === 'DIRECTORY') return '📁'
+  if (node.type === 'SHORTCUT') {
+    if (node.content?.startsWith('app:terminal')) return '💻'
+    if (node.content?.startsWith('app:taskmanager')) return '📊'
+    if (node.content?.startsWith('app:settings')) return '⚙️'
+    if (node.content?.startsWith('app:fileexplorer')) return '📂'
+    if (node.content?.startsWith('app:chrome')) return '🌐'
+    if (node.content?.startsWith('app:paint')) return '🎨'
+    if (node.content?.startsWith('app:jshellstudio')) return '☕'
+    if (node.content?.startsWith('app:minesweeper')) return '💣'
+    if (node.content?.startsWith('app:cvviewer')) return '📄'
+    if (node.content?.includes('github')) return '🐙'
+    if (node.content?.includes('linkedin')) return '💼'
+    return '🔗'
+  }
+  if (node.name.endsWith('.pdf')) return '📄'
+  if (node.name.endsWith('.txt')) return '📝'
+  return '📄'
+}
+
+interface FileIconProps {
+  node: FileNode
+  size?: 'sm' | 'md' | 'lg'
+}
+
+function FileIcon({ node, size = 'md' }: FileIconProps) {
+  const [imgError, setImgError] = useState(false)
+  
+  const sizeClasses = {
+    sm: 'w-6 h-6 text-xl',
+    md: 'w-8 h-8 text-2xl',
+    lg: 'w-10 h-10 text-3xl'
+  }
+
+  if (imgError) {
+    return <span className={sizeClasses[size]}>{getFallbackEmoji(node)}</span>
+  }
+
+  return (
+    <img
+      src={getIconPath(node)}
+      alt={node.name}
+      className={`${sizeClasses[size]} object-contain`}
+      onError={() => setImgError(true)}
+    />
+  )
 }
 
 export function FileExplorer({ onClose, onOpenApp }: FileExplorerProps) {
@@ -166,7 +214,7 @@ export function FileExplorer({ onClose, onOpenApp }: FileExplorerProps) {
       <div className="flex flex-1 overflow-hidden">
         {/* File Grid */}
         <div 
-          className="flex-1 p-4 overflow-auto"
+          className="flex-1 p-5 overflow-auto"
           onClick={() => setSelectedNode(null)}
         >
           {isLoading ? (
@@ -194,7 +242,9 @@ export function FileExplorer({ onClose, onOpenApp }: FileExplorerProps) {
                       : 'hover:bg-gray-700/50'
                   }`}
                 >
-                  <span className="text-3xl mb-2">{ICON_MAP[node.type]}</span>
+                  <div className="mb-2">
+                    <FileIcon node={node} size="lg" />
+                  </div>
                   <span className="text-xs text-center truncate w-full">{node.name}</span>
                 </div>
               ))}

@@ -17,6 +17,13 @@ C:\Users\alexm\Desktop\Portofolio\src\main\java\io\webos\portfolio\filesystem\co
 C:\Users\alexm\Desktop\Portofolio\src\main\java\io\webos\portfolio\filesystem\entity\FileNode.java
 C:\Users\alexm\Desktop\Portofolio\src\main\java\io\webos\portfolio\filesystem\entity\FileType.java
 C:\Users\alexm\Desktop\Portofolio\src\main\java\io\webos\portfolio\filesystem\package-info.java
+C:\Users\alexm\Desktop\Portofolio\src\main\java\io\webos\portfolio\games\minesweeper\boundary\MinesweeperResource.java
+C:\Users\alexm\Desktop\Portofolio\src\main\java\io\webos\portfolio\games\minesweeper\control\GameStateManager.java
+C:\Users\alexm\Desktop\Portofolio\src\main\java\io\webos\portfolio\games\minesweeper\control\MinesweeperService.java
+C:\Users\alexm\Desktop\Portofolio\src\main\java\io\webos\portfolio\games\minesweeper\entity\CellUpdate.java
+C:\Users\alexm\Desktop\Portofolio\src\main\java\io\webos\portfolio\games\minesweeper\entity\GameResponse.java
+C:\Users\alexm\Desktop\Portofolio\src\main\java\io\webos\portfolio\games\minesweeper\entity\GameStatus.java
+C:\Users\alexm\Desktop\Portofolio\src\main\java\io\webos\portfolio\games\minesweeper\entity\GridState.java
 C:\Users\alexm\Desktop\Portofolio\src\main\java\io\webos\portfolio\package-info.java
 C:\Users\alexm\Desktop\Portofolio\src\main\java\io\webos\portfolio\processes\boundary\ProcessesResource.java
 C:\Users\alexm\Desktop\Portofolio\src\main\java\io\webos\portfolio\processes\control\ProcessService.java
