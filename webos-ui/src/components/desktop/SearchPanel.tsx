@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { RecentApp } from '../../types'
+import { AppIcon } from './AppIcon'
 
 interface SearchPanelProps {
   isOpen: boolean
@@ -137,7 +138,7 @@ function RecentAppsSection({ apps, onAppClick, isEmpty }: RecentAppsSectionProps
               onClick={() => onAppClick(app.id)}
               className="w-full flex items-center gap-3 px-3 py-2 rounded-md hover:bg-white/10 transition-colors"
             >
-              <span className="text-2xl">{app.icon}</span>
+              <AppIcon name={app.name} fallbackEmoji={app.icon} size="sm" />
               <span className="text-white/90 text-sm">{app.name}</span>
             </button>
           ))}
@@ -188,7 +189,7 @@ function TopAppsSection({ apps, onAppClick }: TopAppsSectionProps) {
             onClick={() => onAppClick(app)}
             className="flex flex-col items-center gap-1 p-3 rounded-lg hover:bg-white/10 transition-colors"
           >
-            <span className="text-2xl">{app.icon}</span>
+            <AppIcon name={app.name} fallbackEmoji={app.icon} size="md" />
             <span className="text-white/80 text-xs text-center truncate w-full">{app.name}</span>
           </button>
         ))}

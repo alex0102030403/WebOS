@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import type { FileNode } from '../../types'
 
 interface DesktopIconProps {
@@ -7,7 +8,12 @@ interface DesktopIconProps {
   onSelect: (node: FileNode) => void
 }
 
-function getIconEmoji(node: FileNode): string {
+function getIconPath(node: FileNode): string {
+  const baseName = node.name.replace(/\.[^/.]+$/, '')
+  return `/icons/${baseName}.png`
+}
+
+function getFallbackEmoji(node: FileNode): string {
   if (node.type === 'DIRECTORY') return '📁'
   if (node.type === 'SHORTCUT') {
     if (node.content?.startsWith('app:terminal')) return '💻'
@@ -21,6 +27,8 @@ function getIconEmoji(node: FileNode): string {
 }
 
 export function DesktopIcon({ node, onClick, isSelected, onSelect }: DesktopIconProps) {
+  const [imgError, setImgError] = useState(false)
+
   function handleClick(e: React.MouseEvent) {
     e.stopPropagation()
     onSelect(node)
@@ -30,6 +38,8 @@ export function DesktopIcon({ node, onClick, isSelected, onSelect }: DesktopIcon
     e.stopPropagation()
     onClick(node)
   }
+
+  const baseName = node.name.replace(/\.[^/.]+$/, '')
 
   return (
     <div
@@ -44,8 +54,17 @@ export function DesktopIcon({ node, onClick, isSelected, onSelect }: DesktopIcon
       onClick={handleClick}
       onDoubleClick={handleDoubleClick}
     >
-      <div className="text-4xl mb-1">
-        {getIconEmoji(node)}
+      <div className="w-10 h-10 mb-1 flex items-center justify-center">
+        {imgError ? (
+          <span className="text-4xl">{getFallbackEmoji(node)}</span>
+        ) : (
+          <img
+            src={getIconPath(node)}
+            alt={baseName}
+            className="w-full h-full object-contain drop-shadow-lg"
+            onError={() => setImgError(true)}
+          />
+        )}
       </div>
       <span className="text-white text-xs text-center leading-tight drop-shadow-lg line-clamp-2">
         {node.name}
